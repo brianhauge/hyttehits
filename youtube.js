@@ -226,11 +226,111 @@ const songDatabase = [
     { title: "Fire Uger", artist: "Mumle", year: 2025, videoId: "p6Q1xQ_Z_Jw" },
 ];
 
+// Classic song database (1925-2025, focus on 1970-2005)
+const classicSongDatabase = [
+    // 1925-1950s
+    { title: "Singin' in the Rain", artist: "Gene Kelly", year: 1952, videoId: "D1ZYhVpdXbQ" },
+    { title: "What a Wonderful World", artist: "Louis Armstrong", year: 1967, videoId: "VqhCQZaH4Vs" },
+    { title: "Fly Me to the Moon", artist: "Frank Sinatra", year: 1964, videoId: "ZEcqHA7dbwM" },
+    
+    // 1960s
+    { title: "Stand by Me", artist: "Ben E. King", year: 1961, videoId: "hwZNL7QVJjE" },
+    { title: "I Want to Hold Your Hand", artist: "The Beatles", year: 1963, videoId: "jenWdylTtzs" },
+    { title: "My Girl", artist: "The Temptations", year: 1964, videoId: "6IUG-9jZxHQ" },
+    { title: "Respect", artist: "Aretha Franklin", year: 1967, videoId: "6FOUqQt3Kg0" },
+    { title: "Hey Jude", artist: "The Beatles", year: 1968, videoId: "A_MjCqQoLLA" },
+    { title: "I Heard It Through the Grapevine", artist: "Marvin Gaye", year: 1968, videoId: "hajBdDM2qdg" },
+    
+    // 1970s
+    { title: "Imagine", artist: "John Lennon", year: 1971, videoId: "YkgkThdzX-8" },
+    { title: "Superstition", artist: "Stevie Wonder", year: 1972, videoId: "0CFuCYNx-1g" },
+    { title: "Bohemian Rhapsody", artist: "Queen", year: 1975, videoId: "fJ9rUzIMcZQ" },
+    { title: "Dancing Queen", artist: "ABBA", year: 1976, videoId: "xFrGuyw1V8s" },
+    { title: "Stayin' Alive", artist: "Bee Gees", year: 1977, videoId: "fNFzfwLM72c" },
+    { title: "Le Freak", artist: "Chic", year: 1978, videoId: "h1qQ1SKNlgY" },
+    { title: "YMCA", artist: "Village People", year: 1978, videoId: "CS9OO0S5w2k" },
+    { title: "Don't Stop Me Now", artist: "Queen", year: 1979, videoId: "HgzGwKwLmgM" },
+    { title: "I Will Survive", artist: "Gloria Gaynor", year: 1979, videoId: "gYkACVDFmeg" },
+    
+    // 1980s
+    { title: "Another One Bites the Dust", artist: "Queen", year: 1980, videoId: "rY0WxgSXdEE" },
+    { title: "Don't You Want Me", artist: "The Human League", year: 1981, videoId: "uPudE8nDog0" },
+    { title: "Billie Jean", artist: "Michael Jackson", year: 1982, videoId: "Zi_XLOBDo_Y" },
+    { title: "Thriller", artist: "Michael Jackson", year: 1982, videoId: "sOnqjkJTMaA" },
+    { title: "Sweet Dreams", artist: "Eurythmics", year: 1983, videoId: "qeMFqkcPYcg" },
+    { title: "Karma Chameleon", artist: "Culture Club", year: 1983, videoId: "JmcA9LIIXWw" },
+    { title: "Like a Virgin", artist: "Madonna", year: 1984, videoId: "s__rX_WL100" },
+    { title: "Purple Rain", artist: "Prince", year: 1984, videoId: "TvnYmWpD_T8" },
+    { title: "Take On Me", artist: "a-ha", year: 1985, videoId: "djV11Xbc914" },
+    { title: "Sweet Child O' Mine", artist: "Guns N' Roses", year: 1987, videoId: "1w7OgIMMRc4" },
+    { title: "Never Gonna Give You Up", artist: "Rick Astley", year: 1987, videoId: "dQw4w9WgXcQ" },
+    { title: "Every Breath You Take", artist: "The Police", year: 1983, videoId: "OMOGaugKpzs" },
+    
+    // 1990s
+    { title: "Vogue", artist: "Madonna", year: 1990, videoId: "GuJQSAiODqI" },
+    { title: "Smells Like Teen Spirit", artist: "Nirvana", year: 1991, videoId: "hTWKbfoikeg" },
+    { title: "I Will Always Love You", artist: "Whitney Houston", year: 1992, videoId: "3JWTaaS7LdU" },
+    { title: "Creep", artist: "Radiohead", year: 1992, videoId: "XFkzRNyygfk" },
+    { title: "Dreams", artist: "The Cranberries", year: 1993, videoId: "Yam5uK6e-bQ" },
+    { title: "Zombie", artist: "The Cranberries", year: 1994, videoId: "6Ejga4kJUts" },
+    { title: "Gangsta's Paradise", artist: "Coolio", year: 1995, videoId: "fPO76Jlnz6c" },
+    { title: "Wonderwall", artist: "Oasis", year: 1995, videoId: "bx1Bh8ZvH84" },
+    { title: "Wannabe", artist: "Spice Girls", year: 1996, videoId: "gJLIiF15wjQ" },
+    { title: "My Heart Will Go On", artist: "Celine Dion", year: 1997, videoId: "WNIPqafd4As" },
+    { title: "Bitter Sweet Symphony", artist: "The Verve", year: 1997, videoId: "1lyu1KKwC74" },
+    { title: "Torn", artist: "Natalie Imbruglia", year: 1997, videoId: "VV1XWJN3nJo" },
+    { title: "...Baby One More Time", artist: "Britney Spears", year: 1998, videoId: "C-u5WLJ9Yk4" },
+    { title: "Believe", artist: "Cher", year: 1998, videoId: "nZXRV4MezEw" },
+    { title: "Livin' la Vida Loca", artist: "Ricky Martin", year: 1999, videoId: "p47fEXGabaY" },
+    
+    // 2000s
+    { title: "Oops!... I Did It Again", artist: "Britney Spears", year: 2000, videoId: "CduA0TULnow" },
+    { title: "It Wasn't Me", artist: "Shaggy", year: 2000, videoId: "T_x6QmuJdms" },
+    { title: "Lady Marmalade", artist: "Christina Aguilera, Lil' Kim, Mýa, Pink", year: 2001, videoId: "RQa7SvVCdZk" },
+    { title: "In the End", artist: "Linkin Park", year: 2001, videoId: "eVTXPUF4Oz4" },
+    { title: "Complicated", artist: "Avril Lavigne", year: 2002, videoId: "5NPBIwQyPWE" },
+    { title: "Without Me", artist: "Eminem", year: 2002, videoId: "YVkUvmDQ3HY" },
+    { title: "Crazy in Love", artist: "Beyoncé ft. Jay-Z", year: 2003, videoId: "ViwtNLUqkMY" },
+    { title: "Hey Ya!", artist: "OutKast", year: 2003, videoId: "PWgvGjAhvIw" },
+    { title: "Yeah!", artist: "Usher ft. Lil Jon & Ludacris", year: 2004, videoId: "GxBSyx85Kp8" },
+    { title: "Boulevard of Broken Dreams", artist: "Green Day", year: 2004, videoId: "Soa3gO7tL-c" },
+    { title: "Gold Digger", artist: "Kanye West ft. Jamie Foxx", year: 2005, videoId: "6vwNcNOTVzY" },
+    { title: "Since U Been Gone", artist: "Kelly Clarkson", year: 2004, videoId: "R7UrFYvl5TE" },
+    { title: "Hollaback Girl", artist: "Gwen Stefani", year: 2005, videoId: "Kgjkth6BRRY" },
+    
+    // 2006-2015
+    { title: "Crazy", artist: "Gnarls Barkley", year: 2006, videoId: "bd2B6SjMh_w" },
+    { title: "Umbrella", artist: "Rihanna ft. Jay-Z", year: 2007, videoId: "CvBfHwUxHIk" },
+    { title: "Single Ladies", artist: "Beyoncé", year: 2008, videoId: "4m1EFMoRFvY" },
+    { title: "Poker Face", artist: "Lady Gaga", year: 2008, videoId: "bESGLojNYSo" },
+    { title: "Tik Tok", artist: "Ke$ha", year: 2009, videoId: "iP6XpLQM2Cs" },
+    { title: "Rolling in the Deep", artist: "Adele", year: 2010, videoId: "rYEDA3JcQqw" },
+    { title: "Party Rock Anthem", artist: "LMFAO", year: 2011, videoId: "KQ6zr6kCPj8" },
+    { title: "Call Me Maybe", artist: "Carly Rae Jepsen", year: 2012, videoId: "fWNaR-rxAic" },
+    { title: "Get Lucky", artist: "Daft Punk ft. Pharrell Williams", year: 2013, videoId: "5NV6Rdv1a3I" },
+    { title: "Happy", artist: "Pharrell Williams", year: 2013, videoId: "ZbZSe6N_BXs" },
+    { title: "Shake It Off", artist: "Taylor Swift", year: 2014, videoId: "nfWlot6h_JM" },
+    { title: "Uptown Funk", artist: "Mark Ronson ft. Bruno Mars", year: 2014, videoId: "OPf0YbXqDm0" },
+    
+    // 2016-2025
+    { title: "Closer", artist: "The Chainsmokers ft. Halsey", year: 2016, videoId: "PT2_F-1esPk" },
+    { title: "Shape of You", artist: "Ed Sheeran", year: 2017, videoId: "JGwWNGJdvx8" },
+    { title: "God's Plan", artist: "Drake", year: 2018, videoId: "xpVfcZ0ZcFM" },
+    { title: "Old Town Road", artist: "Lil Nas X ft. Billy Ray Cyrus", year: 2019, videoId: "r7qovpFAGrQ" },
+    { title: "Blinding Lights", artist: "The Weeknd", year: 2020, videoId: "4NRXx6U8ABQ" },
+    { title: "Levitating", artist: "Dua Lipa", year: 2021, videoId: "TUVcZfQe-Kw" },
+    { title: "Heat Waves", artist: "Glass Animals", year: 2022, videoId: "mRD0-GxqHVo" },
+    { title: "Flowers", artist: "Miley Cyrus", year: 2023, videoId: "G7KNmW9a75Y" },
+    { title: "Espresso", artist: "Sabrina Carpenter", year: 2024, videoId: "eVli-tstM5E" },
+    { title: "Die With A Smile", artist: "Lady Gaga & Bruno Mars", year: 2025, videoId: "kPa7bsKwL-c" },
+];
+
 // Export functions for use in game.js
 window.youtubeAPI = {
     playVideo,
     pauseVideo,
     stopVideo,
     songDatabase,
+    classicSongDatabase,
     isPlayerReady: () => isPlayerReady
 };

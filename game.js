@@ -6,12 +6,13 @@ const gameState = {
         2: { name: 'Hold 2', score: 0, timeline: [] }
     },
     currentSong: null,
-    usedSongIds: new Set()
+    usedSongIds: new Set(),
+    selectedPlaylist: 'modern' // 'modern' or 'classic'
 };
 
 // Initialize game
 function initGame() {
-    console.log(`Loaded ${window.youtubeAPI.songDatabase.length} songs from YouTube`);
+    console.log(`Loaded ${window.youtubeAPI.songDatabase.length} modern songs and ${window.youtubeAPI.classicSongDatabase.length} classic songs from YouTube`);
 
     // Setup event listeners
     document.getElementById('start-game').addEventListener('click', startGame);
@@ -24,9 +25,11 @@ function initGame() {
 function startGame() {
     const team1Name = document.getElementById('team1-name').value || 'Hold 1';
     const team2Name = document.getElementById('team2-name').value || 'Hold 2';
+    const playlistSelect = document.getElementById('playlist-select').value;
     
     gameState.teams[1].name = team1Name;
     gameState.teams[2].name = team2Name;
+    gameState.selectedPlaylist = playlistSelect;
     
     // Update UI
     document.getElementById('team1-name-display').textContent = team1Name;
@@ -43,7 +46,12 @@ function startGame() {
 
 // Get a random song that hasn't been used
 function getRandomSong() {
-    const availableSongs = window.youtubeAPI.songDatabase.filter(song => !gameState.usedSongIds.has(song.videoId));
+    // Select the appropriate database based on user's choice
+    const database = gameState.selectedPlaylist === 'classic' 
+        ? window.youtubeAPI.classicSongDatabase 
+        : window.youtubeAPI.songDatabase;
+    
+    const availableSongs = database.filter(song => !gameState.usedSongIds.has(song.videoId));
     if (availableSongs.length === 0) {
         alert('Ingen flere sange tilgængelige! Spillet nulstiller sangpuljen.');
         gameState.usedSongIds.clear();

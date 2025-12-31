@@ -89,6 +89,28 @@ body {
     border-color: #198754;
 }
 
+.team-input select {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #333333;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.3s;
+    background: #111111;
+    color: #ffffff;
+    cursor: pointer;
+}
+
+.team-input select:focus {
+    outline: none;
+    border-color: #198754;
+}
+
+.team-input select option {
+    background: #111111;
+    color: #ffffff;
+}
+
 /* Buttons */
 .btn {
     padding: 14px 30px;
