@@ -63,6 +63,9 @@ async function playNextSong() {
     // Show video modal
     document.getElementById('video-modal').classList.remove('hidden');
     
+    // Show guess options BEFORE loading video
+    showGuessOptions();
+    
     // Play on YouTube
     try {
         await window.youtubeAPI.playVideo(song.videoId);
@@ -75,9 +78,6 @@ async function playNextSong() {
         }, 1000);
         return;
     }
-    
-    // Show guess section
-    showGuessOptions();
 }
 
 // Show guess options based on current timeline
