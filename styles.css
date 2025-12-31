@@ -9,12 +9,19 @@ body {
     background: #14213d;
     min-height: 100vh;
     color: #ffffff;
+    overflow-x: hidden;
 }
 
 .container {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 20px;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+.game-content {
+    padding-top: 120px;
+    padding-bottom: 250px;
+    min-height: 100vh;
 }
 
 .screen {
@@ -149,11 +156,14 @@ body {
 
 /* Game Screen */
 .game-header-and-controls {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
     background: #02020a;
-    border-radius: 15px;
-    padding: 30px;
-    margin-bottom: 30px;
+    padding: 20px 30px;
     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+    z-index: 100;
 }
 
 .team-scores {
@@ -237,31 +247,35 @@ body {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.9);
+    background: rgba(0, 0, 0, 0.95);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 1000;
-    padding: 20px;
+    padding: 0;
 }
 
 .video-modal-content {
-    background: #02020a;
-    border-radius: 20px;
-    padding: 40px;
-    max-width: 1400px;
-    width: 100%;
-    max-height: 95vh;
-    overflow-y: auto;
-    box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+    background: #000000;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
 }
 
 .current-team-indicator {
     text-align: center;
-    margin-bottom: 20px;
-    padding: 15px 30px;
-    border-radius: 10px;
+    padding: 20px 30px;
+    width: 100%;
     transition: background-color 0.3s;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1001;
 }
 
 .current-team-indicator.team1 {
@@ -283,67 +297,76 @@ body {
 }
 
 .video-container {
-    margin-bottom: 30px;
-    text-align: center;
+    width: 100%;
+    height: calc(100vh - 300px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     position: relative;
 }
 
 #youtube-player {
-    width: 100%;
-    max-width: 1100px;
-    height: 620px;
-    border-radius: 10px;
-    margin: 0 auto;
+    width: 90vw;
+    height: calc(100vh - 350px);
+    max-width: none;
+    border-radius: 0;
+    margin: 0;
     display: block;
 }
 
 /* Overlay to hide YouTube video title at top */
 .video-overlay {
     position: absolute;
-    top: 0;
+    top: 50%;
     left: 50%;
-    transform: translateX(-50%);
-    width: 100%;
-    max-width: 1100px;
-    height: 50px;
-    background: #000000;
+    transform: translate(-50%, -50%);
+    width: 90vw;
+    height: calc(100vh - 350px);
+    background: transparent;
     pointer-events: none;
     z-index: 10;
-    border-radius: 10px 10px 0 0;
+    border-top: 50px solid #000000;
 }
 
 /* Timeline */
 .timeline-section {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
     background: #02020a;
-    border-radius: 15px;
-    padding: 30px;
-    margin-bottom: 30px;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+    padding: 15px 20px;
+    box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.5);
+    z-index: 100;
+    max-height: 30vh;
+    overflow-y: auto;
 }
 
 .timeline-section > h3 {
     text-align: center;
     color: #198754;
-    font-size: 2rem;
-    margin-bottom: 30px;
+    font-size: 1.5rem;
+    margin-bottom: 15px;
 }
 
 .timeline-container {
     display: flex;
-    flex-direction: column;
-    gap: 30px;
+    flex-direction: row;
+    gap: 20px;
+    justify-content: space-around;
 }
 
 .timeline {
-    padding: 20px;
+    flex: 1;
+    padding: 15px;
     background: #0a0a0f;
     border-radius: 10px;
 }
 
 .timeline h4 {
     color: #198754;
-    margin-bottom: 15px;
-    font-size: 1.3rem;
+    margin-bottom: 10px;
+    font-size: 1.1rem;
 }
 
 .timeline-cards {
@@ -357,28 +380,28 @@ body {
 .year-card {
     background: linear-gradient(135deg, #198754 0%, #764ba2 100%);
     color: white;
-    padding: 20px;
-    border-radius: 10px;
-    min-width: 100px;
+    padding: 12px 15px;
+    border-radius: 8px;
+    min-width: 80px;
     text-align: center;
     box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
     position: relative;
 }
 
 .year-card .year {
-    font-size: 1.8rem;
+    font-size: 1.3rem;
     font-weight: bold;
-    margin-bottom: 5px;
-}
-
-.year-card .song-title {
-    font-size: 0.9rem;
-    opacity: 0.9;
     margin-bottom: 3px;
 }
 
+.year-card .song-title {
+    font-size: 0.75rem;
+    opacity: 0.9;
+    margin-bottom: 2px;
+}
+
 .year-card .song-artist {
-    font-size: 0.8rem;
+    font-size: 0.7rem;
     opacity: 0.8;
     font-style: italic;
 }
@@ -386,9 +409,14 @@ body {
 /* Guess Section */
 .guess-section {
     text-align: center;
-    padding: 15px 20px;
+    padding: 20px;
     background: #0a0a0f;
-    border-radius: 15px;
+    width: 100%;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1001;
 }
 
 .guess-options {
