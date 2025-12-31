@@ -68,6 +68,15 @@ async function playNextSong() {
     
     document.getElementById('play-song').disabled = true;
     
+    // Update team indicator in video modal
+    const currentTeam = gameState.currentTeam;
+    const teamName = gameState.teams[currentTeam].name;
+    const teamIndicator = document.getElementById('current-team-indicator');
+    const modalTeamName = document.getElementById('modal-team-name');
+    
+    modalTeamName.textContent = teamName;
+    teamIndicator.className = 'current-team-indicator team' + currentTeam;
+    
     // Show video modal
     document.getElementById('video-modal').classList.remove('hidden');
     
