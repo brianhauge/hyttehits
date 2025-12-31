@@ -1,0 +1,525 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    color: #333;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    text-align: center;
+    color: white;
+    margin-bottom: 30px;
+}
+
+header h1 {
+    font-size: 4rem;
+    font-weight: bold;
+    text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.3);
+    letter-spacing: 8px;
+}
+
+.subtitle {
+    font-size: 1.2rem;
+    margin-top: 10px;
+    opacity: 0.9;
+}
+
+.screen {
+    display: none;
+}
+
+.screen.active {
+    display: block;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Setup Screen */
+.setup-content {
+    background: white;
+    border-radius: 20px;
+    padding: 40px;
+    max-width: 600px;
+    margin: 0 auto;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.setup-content h2 {
+    margin-bottom: 30px;
+    color: #667eea;
+    font-size: 2rem;
+}
+
+.game-info {
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.game-info p {
+    margin-bottom: 10px;
+    font-size: 1.1rem;
+    color: #555;
+}
+
+.info-note {
+    font-size: 0.9rem;
+    color: #999;
+    font-style: italic;
+}
+
+.team-input {
+    margin-bottom: 20px;
+}
+
+.team-input label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #555;
+}
+
+.team-input input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.3s;
+}
+
+.team-input input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+/* Buttons */
+.btn {
+    padding: 14px 30px;
+    font-size: 1.1rem;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-weight: bold;
+}
+
+.btn-primary {
+    background: #667eea;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #5568d3;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #5a6268;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Game Screen */
+.game-header {
+    background: white;
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 30px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+}
+
+.team-scores {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+}
+
+.team-score {
+    flex: 1;
+    text-align: center;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+
+.team-score h3 {
+    color: #667eea;
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+}
+
+.team-score.active {
+    background: #667eea;
+    color: white;
+}
+
+.team-score.active h3 {
+    color: white;
+}
+
+.score {
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.current-turn {
+    flex: 1;
+    text-align: center;
+    padding: 15px;
+    background: #28a745;
+    color: white;
+    border-radius: 10px;
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+/* Music Player */
+.music-player {
+    background: white;
+    border-radius: 15px;
+    padding: 30px;
+    margin-bottom: 30px;
+    text-align: center;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+}
+
+.player-status {
+    font-size: 1.2rem;
+    color: #666;
+    margin-bottom: 20px;
+}
+
+.player-controls {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+/* Video Modal */
+.video-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+}
+
+.video-modal-content {
+    background: white;
+    border-radius: 20px;
+    padding: 40px;
+    max-width: 1200px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+}
+
+.video-container {
+    margin-bottom: 30px;
+    text-align: center;
+    position: relative;
+    display: inline-block;
+}
+
+#youtube-player {
+    width: 100%;
+    max-width: 800px;
+    height: 450px;
+    border-radius: 10px;
+}
+
+/* Overlay to hide YouTube video title at top */
+.video-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 50px;
+    background: rgba(0, 0, 0, 0.85);
+    pointer-events: none;
+    z-index: 10;
+    border-radius: 10px 10px 0 0;
+}
+
+/* Timeline */
+.timeline-section {
+    background: white;
+    border-radius: 15px;
+    padding: 30px;
+    margin-bottom: 30px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+}
+
+.timeline-section > h3 {
+    text-align: center;
+    color: #667eea;
+    font-size: 2rem;
+    margin-bottom: 30px;
+}
+
+.timeline-container {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.timeline {
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+
+.timeline h4 {
+    color: #667eea;
+    margin-bottom: 15px;
+    font-size: 1.3rem;
+}
+
+.timeline-cards {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    min-height: 100px;
+    align-items: center;
+}
+
+.year-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 10px;
+    min-width: 100px;
+    text-align: center;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+    position: relative;
+}
+
+.year-card .year {
+    font-size: 1.8rem;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.year-card .song-title {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+/* Guess Section */
+.guess-section {
+    text-align: center;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 15px;
+}
+
+.guess-section h3 {
+    color: #667eea;
+    font-size: 1.8rem;
+    margin-bottom: 10px;
+}
+
+.guess-instructions {
+    font-size: 1.1rem;
+    color: #666;
+    margin-bottom: 20px;
+}
+
+.guess-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.guess-btn {
+    padding: 15px;
+    font-size: 1.1rem;
+    background: white;
+    border: 2px solid #667eea;
+    color: #667eea;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-weight: bold;
+}
+
+.guess-btn:hover {
+    background: #667eea;
+    color: white;
+    transform: translateX(5px);
+}
+
+/* Result Section */
+.result-section {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.result-content {
+    background: white;
+    padding: 50px;
+    border-radius: 20px;
+    text-align: center;
+    max-width: 500px;
+    box-shadow: 0 10px 50px rgba(0, 0, 0, 0.3);
+}
+
+.result-content h3 {
+    font-size: 2.5rem;
+    margin-bottom: 30px;
+}
+
+.result-content h3.correct {
+    color: #28a745;
+}
+
+.result-content h3.incorrect {
+    color: #dc3545;
+}
+
+.song-reveal {
+    margin: 30px 0;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+
+.reveal-song {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+}
+
+.reveal-artist {
+    font-size: 1.2rem;
+    color: #666;
+    margin-bottom: 15px;
+}
+
+.reveal-year {
+    font-size: 1.8rem;
+    color: #667eea;
+    font-weight: bold;
+}
+
+/* Winner Screen */
+.winner-content {
+    background: white;
+    border-radius: 20px;
+    padding: 50px;
+    max-width: 600px;
+    margin: 0 auto;
+    text-align: center;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.winner-content h2 {
+    font-size: 3rem;
+    color: #667eea;
+    margin-bottom: 20px;
+}
+
+.winner-content h3 {
+    font-size: 2.5rem;
+    color: #28a745;
+    margin-bottom: 15px;
+}
+
+.winner-message {
+    font-size: 1.5rem;
+    color: #666;
+    margin-bottom: 40px;
+}
+
+.final-scores {
+    display: flex;
+    gap: 30px;
+    justify-content: center;
+    margin-bottom: 40px;
+}
+
+.final-score {
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    min-width: 150px;
+}
+
+.final-score h4 {
+    color: #667eea;
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+}
+
+.final-score p {
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    header h1 {
+        font-size: 2.5rem;
+        letter-spacing: 4px;
+    }
+
+    .team-scores {
+        flex-direction: column;
+    }
+
+    .timeline-cards {
+        justify-content: center;
+    }
+
+    .final-scores {
+        flex-direction: column;
+    }
+
+    .video-modal-content {
+        padding: 20px;
+    }
+
+    #youtube-player {
+        height: 250px;
+    }
+}
