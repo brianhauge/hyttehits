@@ -207,6 +207,7 @@ function updateTimeline() {
             card.innerHTML = `
                 <div class="year">${song.year}</div>
                 <div class="song-title">${song.title}</div>
+                <div class="song-artist">${song.artist}</div>
             `;
             container.appendChild(card);
         });

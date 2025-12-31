@@ -18,8 +18,8 @@ function initYouTubePlayer(videoId) {
         }
 
         youtubePlayer = new YT.Player('youtube-player', {
-            height: '450',
-            width: '800',
+            height: '620',
+            width: '1100',
             videoId: videoId,
             playerVars: {
                 'autoplay': 1,
