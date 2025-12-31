@@ -344,32 +344,57 @@ body {
 .guess-options {
     display: flex;
     flex-direction: row;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 12px;
     justify-content: center;
-    max-width: 900px;
+    align-items: center;
+    max-width: 100%;
     margin: 0 auto;
+    overflow-x: auto;
+    padding: 10px;
 }
 
 .guess-btn {
-    padding: 12px 20px;
+    padding: 15px 25px;
     font-size: 1rem;
     background: white;
-    border: 2px solid #198754;
+    border: 3px solid #198754;
     color: #198754;
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.3s;
     font-weight: bold;
-    flex: 0 1 auto;
-    min-width: 180px;
-    max-width: 250px;
+    flex-shrink: 0;
+    min-width: 120px;
+    white-space: nowrap;
 }
 
 .guess-btn:hover {
     background: #198754;
     color: white;
     transform: scale(1.05);
+}
+
+.guess-year-card {
+    background: linear-gradient(135deg, #198754 0%, #764ba2 100%);
+    color: white;
+    padding: 15px 20px;
+    border-radius: 10px;
+    text-align: center;
+    min-width: 150px;
+    flex-shrink: 0;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.guess-year-card .year {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.guess-year-card .song-title {
+    font-size: 0.9rem;
+    opacity: 0.9;
 }
 
 /* Result Section */

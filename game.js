@@ -96,21 +96,33 @@ function showGuessOptions() {
         btn.onclick = () => makeGuess(0);
         guessOptions.appendChild(btn);
     } else {
-        // Create guess options for each position
+        // Create guess options with year cards interspersed
         for (let i = 0; i <= timeline.length; i++) {
+            // Add button for position
             const btn = document.createElement('button');
             btn.className = 'guess-btn';
             
             if (i === 0) {
-                btn.textContent = `Før ${timeline[0].year}`;
+                btn.textContent = `≤ ${timeline[0].year}`;
             } else if (i === timeline.length) {
-                btn.textContent = `Efter ${timeline[timeline.length - 1].year}`;
+                btn.textContent = `≥ ${timeline[timeline.length - 1].year}`;
             } else {
-                btn.textContent = `Mellem ${timeline[i - 1].year} og ${timeline[i].year}`;
+                btn.textContent = `${timeline[i - 1].year} - ${timeline[i].year}`;
             }
             
             btn.onclick = () => makeGuess(i);
             guessOptions.appendChild(btn);
+            
+            // Add year card after button (except after last button)
+            if (i < timeline.length) {
+                const yearCard = document.createElement('div');
+                yearCard.className = 'guess-year-card';
+                yearCard.innerHTML = `
+                    <div class="year">${timeline[i].year}</div>
+                    <div class="song-title">${timeline[i].title}</div>
+                `;
+                guessOptions.appendChild(yearCard);
+            }
         }
     }
 }
