@@ -106,20 +106,32 @@ function showGuessOptions() {
     } else {
         // Create guess options with year cards interspersed
         for (let i = 0; i <= timeline.length; i++) {
-            // Add button for position
-            const btn = document.createElement('button');
-            btn.className = 'guess-btn';
+            // Check if we should show button for this position
+            let shouldShowButton = true;
             
-            if (i === 0) {
-                btn.textContent = `≤ ${timeline[0].year}`;
-            } else if (i === timeline.length) {
-                btn.textContent = `≥ ${timeline[timeline.length - 1].year}`;
-            } else {
-                btn.textContent = `${timeline[i - 1].year} - ${timeline[i].year}`;
+            if (i > 0 && i < timeline.length) {
+                // Between two cards - don't show button if years are the same
+                if (timeline[i - 1].year === timeline[i].year) {
+                    shouldShowButton = false;
+                }
             }
             
-            btn.onclick = () => makeGuess(i);
-            guessOptions.appendChild(btn);
+            // Add button for position (if appropriate)
+            if (shouldShowButton) {
+                const btn = document.createElement('button');
+                btn.className = 'guess-btn';
+                
+                if (i === 0) {
+                    btn.textContent = `≤ ${timeline[0].year}`;
+                } else if (i === timeline.length) {
+                    btn.textContent = `≥ ${timeline[timeline.length - 1].year}`;
+                } else {
+                    btn.textContent = `${timeline[i - 1].year} - ${timeline[i].year}`;
+                }
+                
+                btn.onclick = () => makeGuess(i);
+                guessOptions.appendChild(btn);
+            }
             
             // Add year card after button (except after last button)
             if (i < timeline.length) {
