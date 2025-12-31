@@ -108,6 +108,8 @@ const songDatabase = [
     { title: "Work", artist: "Rihanna ft. Drake", year: 2016, videoId: "HL1UzIK-flA" },
     { title: "Stressed Out", artist: "Twenty One Pilots", year: 2016, videoId: "pXRviuL6vMY" },
     { title: "This Is What You Came For", artist: "Calvin Harris ft. Rihanna", year: 2016, videoId: "kOkQ4T-7XTs" },
+    { title: "Shake It Off", artist: "Taylor Swift", year: 2016, videoId: "nfWlot6h_JM" },
+    { title: "Blank Space", artist: "Taylor Swift", year: 2016, videoId: "e-ORhEE9VVg" },
     
     // 2017
     { title: "Shape of You", artist: "Ed Sheeran", year: 2017, videoId: "JGwWNGJdvx8" },
@@ -118,6 +120,8 @@ const songDatabase = [
     { title: "Believer", artist: "Imagine Dragons", year: 2017, videoId: "7wtfhZwyrcc" },
     { title: "Rockstar", artist: "Post Malone ft. 21 Savage", year: 2017, videoId: "UceaB4D0jpo" },
     { title: "Stay", artist: "Zedd & Alessia Cara", year: 2017, videoId: "h--P8HzYZ74" },
+    { title: "Look What You Made Me Do", artist: "Taylor Swift", year: 2017, videoId: "3tmd-ClpJxA" },
+    { title: "...Ready For It?", artist: "Taylor Swift", year: 2017, videoId: "wIft-t-MQuE" },
     
     // 2018
     { title: "God's Plan", artist: "Drake", year: 2018, videoId: "xpVfcZ0ZcFM" },
@@ -128,6 +132,7 @@ const songDatabase = [
     { title: "Psycho", artist: "Post Malone ft. Ty Dolla Sign", year: 2018, videoId: "au2n7VVGv_c" },
     { title: "Better Now", artist: "Post Malone", year: 2018, videoId: "UYwF-jdcVjY" },
     { title: "This Is America", artist: "Childish Gambino", year: 2018, videoId: "VYOjWnS4cMY" },
+    { title: "Delicate", artist: "Taylor Swift", year: 2018, videoId: "tCXGJQYZ9JA" },
     
     // 2019
     { title: "Old Town Road", artist: "Lil Nas X ft. Billy Ray Cyrus", year: 2019, videoId: "r7qovpFAGrQ" },
@@ -138,6 +143,8 @@ const songDatabase = [
     { title: "Someone You Loved", artist: "Lewis Capaldi", year: 2019, videoId: "zABLecsR5UE" },
     { title: "Sucker", artist: "Jonas Brothers", year: 2019, videoId: "CnAmeh0-E-U" },
     { title: "7 Rings", artist: "Ariana Grande", year: 2019, videoId: "QYh6mYIJG2Y" },
+    { title: "ME!", artist: "Taylor Swift ft. Brendon Urie", year: 2019, videoId: "FuXNumBwDOM" },
+    { title: "You Need to Calm Down", artist: "Taylor Swift", year: 2019, videoId: "Dkk9gvTmCXY" },
     
     // 2020
     { title: "Blinding Lights", artist: "The Weeknd", year: 2020, videoId: "4NRXx6U8ABQ" },
@@ -148,6 +155,8 @@ const songDatabase = [
     { title: "Say So", artist: "Doja Cat", year: 2020, videoId: "pok8H_KF1FA" },
     { title: "Don't Start Now", artist: "Dua Lipa", year: 2020, videoId: "oygrmJFKYZY" },
     { title: "Circles", artist: "Post Malone", year: 2020, videoId: "wXhTHyIgQ_U" },
+    { title: "Cardigan", artist: "Taylor Swift", year: 2020, videoId: "K-a8s8OLBSE" },
+    { title: "Willow", artist: "Taylor Swift", year: 2020, videoId: "RsEZmictANA" },
     
     // 2021
     { title: "Levitating", artist: "Dua Lipa", year: 2021, videoId: "TUVcZfQe-Kw" },
@@ -158,6 +167,7 @@ const songDatabase = [
     { title: "Save Your Tears", artist: "The Weeknd", year: 2021, videoId: "XXYlFuWEuKI" },
     { title: "Kiss Me More", artist: "Doja Cat ft. SZA", year: 2021, videoId: "0EVVKs6DQLo" },
     { title: "Drivers License", artist: "Olivia Rodrigo", year: 2021, videoId: "ZmDBbnmKpqQ" },
+    { title: "All Too Well (10 Minute Version)", artist: "Taylor Swift", year: 2021, videoId: "tollGa3S0o8" },
     
     // 2022
     { title: "Heat Waves", artist: "Glass Animals", year: 2022, videoId: "mRD0-GxqHVo" },
@@ -168,6 +178,7 @@ const songDatabase = [
     { title: "I'm Good (Blue)", artist: "David Guetta & Bebe Rexha", year: 2022, videoId: "90RLzVUuXe4" },
     { title: "Running Up That Hill", artist: "Kate Bush", year: 2022, videoId: "wp43OdtAAkM" },
     { title: "About Damn Time", artist: "Lizzo", year: 2022, videoId: "SLjnq2BiGbE" },
+    { title: "Lavender Haze", artist: "Taylor Swift", year: 2022, videoId: "jBwWy-YciUQ" },
     
     // 2023
     { title: "Flowers", artist: "Miley Cyrus", year: 2023, videoId: "G7KNmW9a75Y" },
@@ -178,6 +189,7 @@ const songDatabase = [
     { title: "What Was I Made For?", artist: "Billie Eilish", year: 2023, videoId: "j5FweitwAQ8" },
     { title: "Dance The Night", artist: "Dua Lipa", year: 2023, videoId: "RuRLz0pXcKU" },
     { title: "Blinding Lights", artist: "The Weeknd", year: 2023, videoId: "4NRXx6U8ABQ" },
+    { title: "Karma", artist: "Taylor Swift", year: 2023, videoId: "JmnjJ12s4Z8" },
     
     // 2024
     { title: "Espresso", artist: "Sabrina Carpenter", year: 2024, videoId: "eVli-tstM5E" },
@@ -188,12 +200,14 @@ const songDatabase = [
     { title: "Birds of a Feather", artist: "Billie Eilish", year: 2024, videoId: "a6FdJz4oBPg" },
     { title: "Good Luck, Babe!", artist: "Chappell Roan", year: 2024, videoId: "xYk3RHWxVkE" },
     { title: "Too Sweet", artist: "Hozier", year: 2024, videoId: "EUb0LyKTaQE" },
+    { title: "I Can Do It With a Broken Heart", artist: "Taylor Swift", year: 2024, videoId: "4M46TThCu5c" },
     
     // 2025 (recent releases)
     { title: "Die With A Smile", artist: "Lady Gaga & Bruno Mars", year: 2025, videoId: "kPa7bsKwL-c" },
     { title: "APT.", artist: "ROSÉ & Bruno Mars", year: 2025, videoId: "ekr2nIex040" },
     { title: "Lose Control", artist: "Teddy Swims", year: 2025, videoId: "cS3pHKuroIw" },
     { title: "Noid", artist: "Tyler, The Creator", year: 2025, videoId: "oid1Ybi8vy8" },
+    { title: "Guilty as Sin?", artist: "Taylor Swift", year: 2025, videoId: "0zAcB-pxLNU" },
 ];
 
 // Export functions for use in game.js
