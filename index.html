@@ -1,63 +1,51 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="da">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hitster Game</title>
+    <title>Hitster Spil</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>HITSTER</h1>
-            <p class="subtitle">The Music Party Game</p>
-        </header>
-
         <div id="setup-screen" class="screen active">
             <div class="setup-content">
-                <h2>Game Setup</h2>
+                <h2>Spil Opsætning</h2>
                 <div class="game-info">
-                    <p>Play music from 2016-2025 and guess the years!</p>
-                    <p class="info-note">Music provided by YouTube</p>
+                    <p>Spil musik fra 2016-2025 og gæt årene!</p>
+                    <p class="info-note">Musik leveret af YouTube</p>
                 </div>
                 
                 <div id="team-setup">
-                    <h3>Team Names</h3>
+                    <h3>Holdnavne</h3>
                     <div class="team-input">
-                        <label for="team1-name">Team 1:</label>
-                        <input type="text" id="team1-name" value="Team 1" maxlength="20">
+                        <label for="team1-name">Hold 1:</label>
+                        <input type="text" id="team1-name" value="Hold 1" maxlength="20">
                     </div>
                     <div class="team-input">
-                        <label for="team2-name">Team 2:</label>
-                        <input type="text" id="team2-name" value="Team 2" maxlength="20">
+                        <label for="team2-name">Hold 2:</label>
+                        <input type="text" id="team2-name" value="Hold 2" maxlength="20">
                     </div>
-                    <button id="start-game" class="btn btn-primary">Start Game</button>
+                    <button id="start-game" class="btn btn-primary">Start Spil</button>
                 </div>
             </div>
         </div>
 
         <div id="game-screen" class="screen">
-            <div class="game-header">
-                <div class="team-scores">
-                    <div class="team-score" id="team1-score">
-                        <h3 id="team1-name-display">Team 1</h3>
-                        <p class="score">Score: <span id="team1-points">0</span>/10</p>
-                    </div>
-                    <div class="current-turn">
-                        <p>Current Turn: <span id="current-team">Team 1</span></p>
-                    </div>
-                    <div class="team-score" id="team2-score">
-                        <h3 id="team2-name-display">Team 2</h3>
-                        <p class="score">Score: <span id="team2-points">0</span>/10</p>
-                    </div>
-                </div>
-            </div>
-
             <div class="game-content">
-                <div class="music-player">
-                    <p class="player-status" id="player-status">Click "Play Song" to start</p>
-                    <div class="player-controls">
-                        <button id="play-song" class="btn btn-primary">Play Song</button>
+                <div class="game-header-and-controls">
+                    <div class="team-scores">
+                        <div class="team-score" id="team1-score">
+                            <h3 id="team1-name-display">Hold 1</h3>
+                            <p class="score">Point: <span id="team1-points">0</span>/10</p>
+                        </div>
+                        <div class="play-controls">
+                            <button id="play-song" class="btn btn-primary">Afspil Sang - <span id="current-team">Hold 1</span>s Tur</button>
+                        </div>
+                        <div class="team-score" id="team2-score">
+                            <h3 id="team2-name-display">Hold 2</h3>
+                            <p class="score">Point: <span id="team2-points">0</span>/10</p>
+                        </div>
                     </div>
                 </div>
 
@@ -68,22 +56,20 @@
                             <div class="video-overlay"></div>
                         </div>
                         <div class="guess-section" id="guess-section">
-                            <h3>Make Your Guess</h3>
-                            <p id="guess-instructions">Where does this song belong in your timeline?</p>
                             <div id="guess-options" class="guess-options"></div>
                         </div>
                     </div>
                 </div>
 
                 <div class="timeline-section">
-                    <h3>Timeline</h3>
+                    <h3>Tidslinje</h3>
                     <div class="timeline-container">
                         <div id="team1-timeline" class="timeline">
-                            <h4 id="team1-timeline-header">Team 1 Timeline</h4>
+                            <h4 id="team1-timeline-header">Hold 1 Tidslinje</h4>
                             <div class="timeline-cards" id="team1-cards"></div>
                         </div>
                         <div id="team2-timeline" class="timeline">
-                            <h4 id="team2-timeline-header">Team 2 Timeline</h4>
+                            <h4 id="team2-timeline-header">Hold 2 Tidslinje</h4>
                             <div class="timeline-cards" id="team2-cards"></div>
                         </div>
                     </div>
@@ -94,10 +80,10 @@
                         <h3 id="result-title"></h3>
                         <div class="song-reveal">
                             <p class="reveal-song"><strong id="reveal-song-title"></strong></p>
-                            <p class="reveal-artist">by <span id="reveal-artist"></span></p>
-                            <p class="reveal-year">Released in <strong id="reveal-year"></strong></p>
+                            <p class="reveal-artist">af <span id="reveal-artist"></span></p>
+                            <p class="reveal-year">Udgivet i <strong id="reveal-year"></strong></p>
                         </div>
-                        <button id="continue-game" class="btn btn-primary">Continue</button>
+                        <button id="continue-game" class="btn btn-primary">Fortsæt</button>
                     </div>
                 </div>
             </div>
@@ -105,20 +91,20 @@
 
         <div id="winner-screen" class="screen">
             <div class="winner-content">
-                <h2>We Have a HITSTER!</h2>
+                <h2>Vi har en HITSTER!</h2>
                 <h3 id="winner-name"></h3>
-                <p class="winner-message">Congratulations!</p>
+                <p class="winner-message">Tillykke!</p>
                 <div class="final-scores">
                     <div class="final-score">
-                        <h4 id="final-team1-name">Team 1</h4>
-                        <p>Score: <span id="final-team1-score">0</span></p>
+                        <h4 id="final-team1-name">Hold 1</h4>
+                        <p>Point: <span id="final-team1-score">0</span></p>
                     </div>
                     <div class="final-score">
-                        <h4 id="final-team2-name">Team 2</h4>
-                        <p>Score: <span id="final-team2-score">0</span></p>
+                        <h4 id="final-team2-name">Hold 2</h4>
+                        <p>Point: <span id="final-team2-score">0</span></p>
                     </div>
                 </div>
-                <button id="play-again" class="btn btn-primary">Play Again</button>
+                <button id="play-again" class="btn btn-primary">Spil Igen</button>
             </div>
         </div>
     </div>

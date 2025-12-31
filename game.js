@@ -2,8 +2,8 @@
 const gameState = {
     currentTeam: 1,
     teams: {
-        1: { name: 'Team 1', score: 0, timeline: [] },
-        2: { name: 'Team 2', score: 0, timeline: [] }
+        1: { name: 'Hold 1', score: 0, timeline: [] },
+        2: { name: 'Hold 2', score: 0, timeline: [] }
     },
     currentSong: null,
     usedSongIds: new Set()
@@ -22,8 +22,8 @@ function initGame() {
 
 // Start the game
 function startGame() {
-    const team1Name = document.getElementById('team1-name').value || 'Team 1';
-    const team2Name = document.getElementById('team2-name').value || 'Team 2';
+    const team1Name = document.getElementById('team1-name').value || 'Hold 1';
+    const team2Name = document.getElementById('team2-name').value || 'Hold 2';
     
     gameState.teams[1].name = team1Name;
     gameState.teams[2].name = team2Name;
@@ -31,8 +31,8 @@ function startGame() {
     // Update UI
     document.getElementById('team1-name-display').textContent = team1Name;
     document.getElementById('team2-name-display').textContent = team2Name;
-    document.getElementById('team1-timeline-header').textContent = `${team1Name} Timeline`;
-    document.getElementById('team2-timeline-header').textContent = `${team2Name} Timeline`;
+    document.getElementById('team1-timeline-header').textContent = `${team1Name} Tidslinje`;
+    document.getElementById('team2-timeline-header').textContent = `${team2Name} Tidslinje`;
     
     // Switch to game screen
     document.getElementById('setup-screen').classList.remove('active');
@@ -45,7 +45,7 @@ function startGame() {
 function getRandomSong() {
     const availableSongs = window.youtubeAPI.songDatabase.filter(song => !gameState.usedSongIds.has(song.videoId));
     if (availableSongs.length === 0) {
-        alert('No more songs available! The game will reset the song pool.');
+        alert('Ingen flere sange tilgængelige! Spillet nulstiller sangpuljen.');
         gameState.usedSongIds.clear();
         return getRandomSong();
     }
@@ -58,9 +58,6 @@ async function playNextSong() {
     gameState.currentSong = song;
     gameState.usedSongIds.add(song.videoId);
     
-    // Update UI
-    document.getElementById('player-status').textContent = 'Now Playing...';
-    
     document.getElementById('play-song').disabled = true;
     
     // Show video modal
@@ -71,7 +68,6 @@ async function playNextSong() {
         await window.youtubeAPI.playVideo(song.videoId);
     } catch (error) {
         console.error('Error playing video:', error);
-        document.getElementById('player-status').textContent = 'Video unavailable, loading next song...';
         // Hide modal and try next song
         document.getElementById('video-modal').classList.add('hidden');
         setTimeout(() => {
@@ -96,7 +92,7 @@ function showGuessOptions() {
         // First card - no guess needed, just add it
         const btn = document.createElement('button');
         btn.className = 'guess-btn';
-        btn.textContent = 'Place First Card';
+        btn.textContent = 'Placer Første Kort';
         btn.onclick = () => makeGuess(0);
         guessOptions.appendChild(btn);
     } else {
@@ -106,11 +102,11 @@ function showGuessOptions() {
             btn.className = 'guess-btn';
             
             if (i === 0) {
-                btn.textContent = `Before ${timeline[0].year}`;
+                btn.textContent = `Før ${timeline[0].year}`;
             } else if (i === timeline.length) {
-                btn.textContent = `After ${timeline[timeline.length - 1].year}`;
+                btn.textContent = `Efter ${timeline[timeline.length - 1].year}`;
             } else {
-                btn.textContent = `Between ${timeline[i - 1].year} and ${timeline[i].year}`;
+                btn.textContent = `Mellem ${timeline[i - 1].year} og ${timeline[i].year}`;
             }
             
             btn.onclick = () => makeGuess(i);
@@ -155,7 +151,7 @@ function showResult(isCorrect, position) {
     const resultSection = document.getElementById('result-section');
     const resultTitle = document.getElementById('result-title');
     
-    resultTitle.textContent = isCorrect ? 'Correct!' : 'Wrong!';
+    resultTitle.textContent = isCorrect ? 'Rigtigt!' : 'Forkert!';
     resultTitle.className = isCorrect ? 'correct' : 'incorrect';
     
     document.getElementById('reveal-song-title').textContent = song.title;
@@ -191,7 +187,6 @@ function continueGame() {
     
     // Reset for next song
     document.getElementById('play-song').disabled = false;
-    document.getElementById('player-status').textContent = 'Click "Play Song" to continue';
 }
 
 // Update timeline display
@@ -224,6 +219,9 @@ function updateScores() {
 function updateTurnDisplay() {
     const currentTeamName = gameState.teams[gameState.currentTeam].name;
     document.getElementById('current-team').textContent = currentTeamName;
+    
+    // Update play button text
+    document.getElementById('play-song').innerHTML = `Afspil Sang - <span id="current-team">${currentTeamName}</span>s Tur`;
     
     // Highlight active team
     for (let i = 1; i <= 2; i++) {

@@ -6,7 +6,7 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #14213d;
     min-height: 100vh;
     color: #333;
 }
@@ -15,25 +15,6 @@ body {
     max-width: 1400px;
     margin: 0 auto;
     padding: 20px;
-}
-
-header {
-    text-align: center;
-    color: white;
-    margin-bottom: 30px;
-}
-
-header h1 {
-    font-size: 4rem;
-    font-weight: bold;
-    text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.3);
-    letter-spacing: 8px;
-}
-
-.subtitle {
-    font-size: 1.2rem;
-    margin-top: 10px;
-    opacity: 0.9;
 }
 
 .screen {
@@ -60,7 +41,7 @@ header h1 {
 
 .setup-content h2 {
     margin-bottom: 30px;
-    color: #667eea;
+    color: #198754;
     font-size: 2rem;
 }
 
@@ -103,7 +84,7 @@ header h1 {
 
 .team-input input:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: #198754;
 }
 
 /* Buttons */
@@ -118,7 +99,7 @@ header h1 {
 }
 
 .btn-primary {
-    background: #667eea;
+    background: #198754;
     color: white;
 }
 
@@ -143,10 +124,10 @@ header h1 {
 }
 
 /* Game Screen */
-.game-header {
+.game-header-and-controls {
     background: white;
     border-radius: 15px;
-    padding: 20px;
+    padding: 30px;
     margin-bottom: 30px;
     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
 }
@@ -167,13 +148,12 @@ header h1 {
 }
 
 .team-score h3 {
-    color: #667eea;
+    color: #198754;
     font-size: 1.5rem;
     margin-bottom: 10px;
 }
 
 .team-score.active {
-    background: #667eea;
     color: white;
 }
 
@@ -181,42 +161,49 @@ header h1 {
     color: white;
 }
 
+#team1-score {
+    background: #7209b7;
+    color: white;
+}
+
+#team1-score h3 {
+    color: white;
+}
+
+#team1-score.active {
+    background: #7209b7;
+}
+
+#team2-score {
+    background: #fb8500;
+    color: white;
+}
+
+#team2-score h3 {
+    color: white;
+}
+
+#team2-score.active {
+    background: #fb8500;
+}
+
 .score {
     font-size: 1.2rem;
     font-weight: bold;
 }
 
-.current-turn {
+.play-controls {
     flex: 1;
     text-align: center;
-    padding: 15px;
-    background: #28a745;
-    color: white;
-    border-radius: 10px;
-    font-size: 1.2rem;
-    font-weight: bold;
-}
-
-/* Music Player */
-.music-player {
-    background: white;
-    border-radius: 15px;
-    padding: 30px;
-    margin-bottom: 30px;
-    text-align: center;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-}
-
-.player-status {
-    font-size: 1.2rem;
-    color: #666;
-    margin-bottom: 20px;
-}
-
-.player-controls {
     display: flex;
-    gap: 15px;
+    flex-direction: column;
     justify-content: center;
+}
+
+#play-song {
+    font-size: 1.2rem;
+    padding: 18px 30px;
+    white-space: nowrap;
 }
 
 /* Video Modal */
@@ -286,7 +273,7 @@ header h1 {
 
 .timeline-section > h3 {
     text-align: center;
-    color: #667eea;
+    color: #198754;
     font-size: 2rem;
     margin-bottom: 30px;
 }
@@ -304,7 +291,7 @@ header h1 {
 }
 
 .timeline h4 {
-    color: #667eea;
+    color: #198754;
     margin-bottom: 15px;
     font-size: 1.3rem;
 }
@@ -318,7 +305,7 @@ header h1 {
 }
 
 .year-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #198754 0%, #764ba2 100%);
     color: white;
     padding: 20px;
     border-radius: 10px;
@@ -349,47 +336,40 @@ header h1 {
 /* Guess Section */
 .guess-section {
     text-align: center;
-    padding: 20px;
+    padding: 15px 20px;
     background: #f8f9fa;
     border-radius: 15px;
 }
 
-.guess-section h3 {
-    color: #667eea;
-    font-size: 1.8rem;
-    margin-bottom: 10px;
-}
-
-.guess-instructions {
-    font-size: 1.1rem;
-    color: #666;
-    margin-bottom: 20px;
-}
-
 .guess-options {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: wrap;
     gap: 12px;
-    max-width: 500px;
+    justify-content: center;
+    max-width: 900px;
     margin: 0 auto;
 }
 
 .guess-btn {
-    padding: 15px;
-    font-size: 1.1rem;
+    padding: 12px 20px;
+    font-size: 1rem;
     background: white;
-    border: 2px solid #667eea;
-    color: #667eea;
+    border: 2px solid #198754;
+    color: #198754;
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.3s;
     font-weight: bold;
+    flex: 0 1 auto;
+    min-width: 180px;
+    max-width: 250px;
 }
 
 .guess-btn:hover {
-    background: #667eea;
+    background: #198754;
     color: white;
-    transform: translateX(5px);
+    transform: scale(1.05);
 }
 
 /* Result Section */
@@ -448,7 +428,7 @@ header h1 {
 
 .reveal-year {
     font-size: 1.8rem;
-    color: #667eea;
+    color: #198754;
     font-weight: bold;
 }
 
@@ -465,7 +445,7 @@ header h1 {
 
 .winner-content h2 {
     font-size: 3rem;
-    color: #667eea;
+    color: #198754;
     margin-bottom: 20px;
 }
 
@@ -496,7 +476,7 @@ header h1 {
 }
 
 .final-score h4 {
-    color: #667eea;
+    color: #198754;
     font-size: 1.5rem;
     margin-bottom: 10px;
 }
@@ -508,11 +488,6 @@ header h1 {
 
 /* Responsive */
 @media (max-width: 768px) {
-    header h1 {
-        font-size: 2.5rem;
-        letter-spacing: 4px;
-    }
-
     .team-scores {
         flex-direction: column;
     }
