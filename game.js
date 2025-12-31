@@ -179,8 +179,11 @@ function showResult(isCorrect, position) {
     
     resultSection.classList.remove('hidden');
     
-    // Update game state if correct
+    // Play success sound and confetti if correct
     if (isCorrect) {
+        playSuccessSound();
+        launchConfetti();
+        
         const currentTeam = gameState.currentTeam;
         gameState.teams[currentTeam].timeline.splice(position, 0, song);
         gameState.teams[currentTeam].score++;
@@ -194,6 +197,76 @@ function showResult(isCorrect, position) {
     
     updateTimeline();
     updateScores();
+}
+
+// Play success sound
+function playSuccessSound() {
+    // Create audio context
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    
+    // Create a simple cheerful melody using Web Audio API
+    const now = audioContext.currentTime;
+    
+    function playNote(frequency, startTime, duration) {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = frequency;
+        oscillator.type = 'sine';
+        
+        gainNode.gain.setValueAtTime(0.3, startTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+        
+        oscillator.start(startTime);
+        oscillator.stop(startTime + duration);
+    }
+    
+    // Play a cheerful ascending melody (C major chord arpeggio)
+    playNote(523.25, now, 0.15);        // C5
+    playNote(659.25, now + 0.15, 0.15); // E5
+    playNote(783.99, now + 0.3, 0.3);   // G5
+}
+
+// Launch confetti animation
+function launchConfetti() {
+    // Launch confetti from multiple angles
+    const count = 200;
+    const defaults = {
+        origin: { y: 0.7 },
+        colors: ['#198754', '#7209b7', '#fb8500', '#FFD700', '#FF69B4']
+    };
+    
+    function fire(particleRatio, opts) {
+        confetti(Object.assign({}, defaults, opts, {
+            particleCount: Math.floor(count * particleRatio)
+        }));
+    }
+    
+    fire(0.25, {
+        spread: 26,
+        startVelocity: 55,
+    });
+    fire(0.2, {
+        spread: 60,
+    });
+    fire(0.35, {
+        spread: 100,
+        decay: 0.91,
+        scalar: 0.8
+    });
+    fire(0.1, {
+        spread: 120,
+        startVelocity: 25,
+        decay: 0.92,
+        scalar: 1.2
+    });
+    fire(0.1, {
+        spread: 120,
+        startVelocity: 45,
+    });
 }
 
 // Continue to next turn
