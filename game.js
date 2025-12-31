@@ -201,13 +201,47 @@ function showResult(isCorrect, position) {
 
 // Play success sound
 function playSuccessSound() {
-    // Create audio context
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    
-    // Create a simple cheerful melody using Web Audio API
     const now = audioContext.currentTime;
     
-    function playNote(frequency, startTime, duration) {
+    // Create clapping sounds with noise bursts
+    function createClap(startTime) {
+        // Create white noise for clap sound
+        const bufferSize = audioContext.sampleRate * 0.05; // 50ms of noise
+        const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+        const data = buffer.getChannelData(0);
+        
+        // Fill with white noise
+        for (let i = 0; i < bufferSize; i++) {
+            data[i] = Math.random() * 2 - 1;
+        }
+        
+        const noise = audioContext.createBufferSource();
+        noise.buffer = buffer;
+        
+        const noiseFilter = audioContext.createBiquadFilter();
+        noiseFilter.type = 'bandpass';
+        noiseFilter.frequency.value = 1000;
+        
+        const noiseGain = audioContext.createGain();
+        noiseGain.gain.setValueAtTime(0.5, startTime);
+        noiseGain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.05);
+        
+        noise.connect(noiseFilter);
+        noiseFilter.connect(noiseGain);
+        noiseGain.connect(audioContext.destination);
+        
+        noise.start(startTime);
+        noise.stop(startTime + 0.05);
+    }
+    
+    // Create multiple claps for applause
+    for (let i = 0; i < 8; i++) {
+        createClap(now + i * 0.08);
+    }
+    
+    // Add some celebratory tones
+    function playTone(frequency, startTime, duration) {
         const oscillator = audioContext.createOscillator();
         const gainNode = audioContext.createGain();
         
@@ -215,58 +249,70 @@ function playSuccessSound() {
         gainNode.connect(audioContext.destination);
         
         oscillator.frequency.value = frequency;
-        oscillator.type = 'sine';
+        oscillator.type = 'triangle';
         
-        gainNode.gain.setValueAtTime(0.3, startTime);
+        gainNode.gain.setValueAtTime(0.15, startTime);
         gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
         
         oscillator.start(startTime);
         oscillator.stop(startTime + duration);
     }
     
-    // Play a cheerful ascending melody (C major chord arpeggio)
-    playNote(523.25, now, 0.15);        // C5
-    playNote(659.25, now + 0.15, 0.15); // E5
-    playNote(783.99, now + 0.3, 0.3);   // G5
+    // Add cheerful chime after claps
+    playTone(880, now + 0.7, 0.3);   // A5
+    playTone(1046.5, now + 0.9, 0.4); // C6
 }
 
 // Launch confetti animation
 function launchConfetti() {
-    // Launch confetti from multiple angles
-    const count = 200;
-    const defaults = {
-        origin: { y: 0.7 },
-        colors: ['#198754', '#7209b7', '#fb8500', '#FFD700', '#FF69B4']
-    };
-    
-    function fire(particleRatio, opts) {
-        confetti(Object.assign({}, defaults, opts, {
-            particleCount: Math.floor(count * particleRatio)
-        }));
+    // Set confetti canvas z-index to be above modals
+    const confettiCanvas = document.querySelector('canvas');
+    if (confettiCanvas) {
+        confettiCanvas.style.position = 'fixed';
+        confettiCanvas.style.top = '0';
+        confettiCanvas.style.left = '0';
+        confettiCanvas.style.width = '100%';
+        confettiCanvas.style.height = '100%';
+        confettiCanvas.style.pointerEvents = 'none';
+        confettiCanvas.style.zIndex = '9999';
     }
     
-    fire(0.25, {
-        spread: 26,
-        startVelocity: 55,
-    });
-    fire(0.2, {
-        spread: 60,
-    });
-    fire(0.35, {
-        spread: 100,
-        decay: 0.91,
-        scalar: 0.8
-    });
-    fire(0.1, {
-        spread: 120,
-        startVelocity: 25,
-        decay: 0.92,
-        scalar: 1.2
-    });
-    fire(0.1, {
-        spread: 120,
-        startVelocity: 45,
-    });
+    // Launch confetti from multiple angles
+    const duration = 3000;
+    const animationEnd = Date.now() + duration;
+    const defaults = {
+        startVelocity: 30,
+        spread: 360,
+        ticks: 60,
+        zIndex: 9999,
+        colors: ['#198754', '#7209b7', '#fb8500', '#FFD700', '#FF69B4', '#00FFFF']
+    };
+    
+    function randomInRange(min, max) {
+        return Math.random() * (max - min) + min;
+    }
+    
+    const interval = setInterval(function() {
+        const timeLeft = animationEnd - Date.now();
+        
+        if (timeLeft <= 0) {
+            return clearInterval(interval);
+        }
+        
+        const particleCount = 50 * (timeLeft / duration);
+        
+        // Launch from left
+        confetti(Object.assign({}, defaults, {
+            particleCount,
+            origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
+        }));
+        
+        // Launch from right
+        confetti(Object.assign({}, defaults, {
+            particleCount,
+            origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
+        }));
+    }, 250);
 }
 
 // Continue to next turn
