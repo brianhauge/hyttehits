@@ -125,6 +125,13 @@ function showGuessOptions() {
             }
         }
     }
+    
+    // Scroll to center of the options after elements are added
+    setTimeout(() => {
+        const scrollWidth = guessOptions.scrollWidth;
+        const clientWidth = guessOptions.clientWidth;
+        guessOptions.scrollLeft = (scrollWidth - clientWidth) / 2;
+    }, 0);
 }
 
 // Make a guess

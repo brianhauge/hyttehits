@@ -348,12 +348,33 @@ body {
     flex-direction: row;
     flex-wrap: nowrap;
     gap: 12px;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
     max-width: 100%;
     margin: 0 auto;
     overflow-x: auto;
+    overflow-y: hidden;
     padding: 10px;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Scrollbar styling for better visibility */
+.guess-options::-webkit-scrollbar {
+    height: 10px;
+}
+
+.guess-options::-webkit-scrollbar-track {
+    background: #02020a;
+    border-radius: 5px;
+}
+
+.guess-options::-webkit-scrollbar-thumb {
+    background: #198754;
+    border-radius: 5px;
+}
+
+.guess-options::-webkit-scrollbar-thumb:hover {
+    background: #146c43;
 }
 
 .guess-btn {
