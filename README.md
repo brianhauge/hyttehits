@@ -118,7 +118,7 @@ The game includes 80+ popular songs from each year between 2016-2025, including 
 ## File Structure
 
 ```
-hitster-sjov/
+hyttehits/
 ├── index.html      # Main HTML structure
 ├── styles.css      # Styling and layout
 ├── game.js         # Game logic and state management
