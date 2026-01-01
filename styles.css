@@ -226,20 +226,6 @@ body {
     font-weight: bold;
 }
 
-.play-controls {
-    flex: 1;
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
-
-#play-song {
-    font-size: 1.2rem;
-    padding: 18px 30px;
-    white-space: nowrap;
-}
-
 /* Video Modal */
 .video-modal {
     position: fixed;

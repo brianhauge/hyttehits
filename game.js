@@ -16,7 +16,6 @@ function initGame() {
 
     // Setup event listeners
     document.getElementById('start-game').addEventListener('click', startGame);
-    document.getElementById('play-song').addEventListener('click', playNextSong);
     document.getElementById('continue-game').addEventListener('click', continueGame);
     document.getElementById('play-again').addEventListener('click', resetGame);
 }
@@ -42,6 +41,9 @@ function startGame() {
     document.getElementById('game-screen').classList.add('active');
     
     updateTurnDisplay();
+    
+    // Automatically start the first song
+    playNextSong();
 }
 
 // Get a random song that hasn't been used
@@ -65,8 +67,6 @@ async function playNextSong() {
     const song = getRandomSong();
     gameState.currentSong = song;
     gameState.usedSongIds.add(song.videoId);
-    
-    document.getElementById('play-song').disabled = true;
     
     // Update team indicator in video modal
     const currentTeam = gameState.currentTeam;
@@ -352,8 +352,8 @@ function continueGame() {
     gameState.currentTeam = gameState.currentTeam === 1 ? 2 : 1;
     updateTurnDisplay();
     
-    // Reset for next song
-    document.getElementById('play-song').disabled = false;
+    // Automatically play next song for the next team
+    playNextSong();
 }
 
 // Update timeline display
@@ -384,12 +384,6 @@ function updateScores() {
 
 // Update turn display
 function updateTurnDisplay() {
-    const currentTeamName = gameState.teams[gameState.currentTeam].name;
-    document.getElementById('current-team').textContent = currentTeamName;
-    
-    // Update play button text
-    document.getElementById('play-song').innerHTML = `Afspil Sang - <span id="current-team">${currentTeamName}</span>s Tur`;
-    
     // Highlight active team
     for (let i = 1; i <= 2; i++) {
         const scoreDiv = document.getElementById(`team${i}-score`);
