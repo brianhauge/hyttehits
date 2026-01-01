@@ -141,6 +141,7 @@ function showGuessOptions() {
                 yearCard.innerHTML = `
                     <div class="year">${timeline[i].year}</div>
                     <div class="song-title">${timeline[i].title}</div>
+                    <div class="song-artist">${timeline[i].artist}</div>
                 `;
                 guessOptions.appendChild(yearCard);
             }
