@@ -41,58 +41,29 @@
 
         <div id="game-screen" class="screen">
             <div class="game-content">
-                <div class="game-header-and-controls">
-                    <div class="team-scores">
-                        <div class="team-score" id="team1-score">
-                            <h3 id="team1-name-display">Hold 1</h3>
-                            <p class="score">Point: <span id="team1-points">0</span>/10</p>
+                <div class="current-team-indicator" id="current-team-indicator">
+                    <div class="modal-team-scores">
+                        <div class="modal-team-score" id="modal-team1-score">
+                            <span class="modal-team-name" id="modal-team1-name">Hold 1</span>
+                            <span class="modal-score"><span id="modal-team1-points">0</span>/10</span>
                         </div>
-                        <div class="team-score" id="team2-score">
-                            <h3 id="team2-name-display">Hold 2</h3>
-                            <p class="score">Point: <span id="team2-points">0</span>/10</p>
+                        <div class="team-indicator-content">
+                            <span id="modal-team-name">Hold 1</span>s Tur
                         </div>
-                    </div>
-                </div>
-
-                <div class="video-modal hidden" id="video-modal">
-                    <div class="video-modal-content">
-                        <div class="current-team-indicator" id="current-team-indicator">
-                            <div class="modal-team-scores">
-                                <div class="modal-team-score" id="modal-team1-score">
-                                    <span class="modal-team-name" id="modal-team1-name">Hold 1</span>
-                                    <span class="modal-score"><span id="modal-team1-points">0</span>/10</span>
-                                </div>
-                                <div class="team-indicator-content">
-                                    <span id="modal-team-name">Hold 1</span>s Tur
-                                </div>
-                                <div class="modal-team-score" id="modal-team2-score">
-                                    <span class="modal-team-name" id="modal-team2-name">Hold 2</span>
-                                    <span class="modal-score"><span id="modal-team2-points">0</span>/10</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="video-container">
-                            <div id="youtube-player"></div>
-                            <div class="video-overlay"></div>
-                        </div>
-                        <div class="guess-section" id="guess-section">
-                            <div id="guess-options" class="guess-options"></div>
+                        <div class="modal-team-score" id="modal-team2-score">
+                            <span class="modal-team-name" id="modal-team2-name">Hold 2</span>
+                            <span class="modal-score"><span id="modal-team2-points">0</span>/10</span>
                         </div>
                     </div>
                 </div>
-
-                <div class="timeline-section">
-                    <h3>Tidslinje</h3>
-                    <div class="timeline-container">
-                        <div id="team1-timeline" class="timeline">
-                            <h4 id="team1-timeline-header">Hold 1 Tidslinje</h4>
-                            <div class="timeline-cards" id="team1-cards"></div>
-                        </div>
-                        <div id="team2-timeline" class="timeline">
-                            <h4 id="team2-timeline-header">Hold 2 Tidslinje</h4>
-                            <div class="timeline-cards" id="team2-cards"></div>
-                        </div>
-                    </div>
+                
+                <div class="video-container">
+                    <div id="youtube-player"></div>
+                    <div class="video-overlay"></div>
+                </div>
+                
+                <div class="guess-section" id="guess-section">
+                    <div id="guess-options" class="guess-options"></div>
                 </div>
 
                 <div class="result-section hidden" id="result-section">

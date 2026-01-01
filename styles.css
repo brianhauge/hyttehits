@@ -12,6 +12,24 @@ body {
     overflow-x: hidden;
 }
 
+/* Game Screen Layout */
+#game-screen {
+    display: none;
+    flex-direction: column;
+    height: 100vh;
+    width: 100vw;
+    background: #000000;
+    overflow: hidden;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+
+#game-screen.active {
+    display: flex;
+}
+
 .container {
     max-width: 100%;
     margin: 0;
@@ -19,9 +37,12 @@ body {
 }
 
 .game-content {
-    padding-top: 120px;
-    padding-bottom: 250px;
-    min-height: 100vh;
+    background: #000000;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
 }
 
 .screen {
@@ -37,12 +58,26 @@ body {
 }
 
 /* Setup Screen */
+#setup-screen {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 40px 20px;
+    position: relative;
+    z-index: 1000;
+}
+
+#setup-screen.active {
+    display: flex;
+}
+
 .setup-content {
     background: #02020a;
     border-radius: 20px;
     padding: 40px;
     max-width: 600px;
-    margin: 0 auto;
+    width: 100%;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
 }
 
@@ -67,6 +102,12 @@ body {
     font-size: 0.9rem;
     color: #888888;
     font-style: italic;
+}
+
+#team-setup h3 {
+    color: #198754;
+    margin: 30px 0 20px 0;
+    font-size: 1.3rem;
 }
 
 .team-input {
@@ -154,104 +195,7 @@ body {
     cursor: not-allowed;
 }
 
-/* Game Screen */
-.game-header-and-controls {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    background: #02020a;
-    padding: 20px 30px;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
-    z-index: 100;
-}
-
-.team-scores {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 20px;
-}
-
-.team-score {
-    flex: 1;
-    text-align: center;
-    padding: 15px;
-    background: #f8f9fa;
-    border-radius: 10px;
-}
-
-.team-score h3 {
-    color: #198754;
-    font-size: 1.5rem;
-    margin-bottom: 10px;
-}
-
-.team-score.active {
-    color: white;
-}
-
-.team-score.active h3 {
-    color: white;
-}
-
-#team1-score {
-    background: #7209b7;
-    color: white;
-}
-
-#team1-score h3 {
-    color: white;
-}
-
-#team1-score.active {
-    background: #7209b7;
-}
-
-#team2-score {
-    background: #fb8500;
-    color: white;
-}
-
-#team2-score h3 {
-    color: white;
-}
-
-#team2-score.active {
-    background: #fb8500;
-}
-
-.score {
-    font-size: 1.2rem;
-    font-weight: bold;
-}
-
-/* Video Modal */
-.video-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.95);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    padding: 0;
-}
-
-.video-modal-content {
-    background: #000000;
-    width: 100vw;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-}
-
+/* Current Team Indicator (Header) */
 .current-team-indicator {
     text-align: center;
     padding: 20px 30px;
@@ -261,7 +205,7 @@ body {
     top: 0;
     left: 0;
     right: 0;
-    z-index: 1001;
+    z-index: 100;
 }
 
 .current-team-indicator.team1 {
@@ -312,18 +256,22 @@ body {
     font-size: 1.8rem;
 }
 
+/* Video Container - Center of Screen */
 .video-container {
-    width: 100%;
-    height: calc(100vh - 300px);
+    position: fixed;
+    top: 100px;
+    left: 0;
+    right: 0;
+    bottom: 200px;
     display: flex;
     align-items: center;
     justify-content: center;
-    position: relative;
+    background: #000000;
 }
 
 #youtube-player {
-    width: 90vw;
-    height: calc(100vh - 350px);
+    width: 95vw;
+    height: calc(100vh - 320px);
     max-width: none;
     border-radius: 0;
     margin: 0;
@@ -336,103 +284,27 @@ body {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 90vw;
-    height: calc(100vh - 350px);
+    width: 95vw;
+    height: calc(100vh - 320px);
     background: transparent;
     pointer-events: none;
     z-index: 10;
-    border-top: 50px solid #000000;
+    border-top: 60px solid #000000;
 }
 
-/* Timeline */
-.timeline-section {
+/* Guess Section - Footer with Timeline Cards */
+.guess-section {
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-    background: #02020a;
-    padding: 15px 20px;
-    box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.5);
-    z-index: 100;
-    max-height: 30vh;
-    overflow-y: auto;
-}
-
-.timeline-section > h3 {
-    text-align: center;
-    color: #198754;
-    font-size: 1.5rem;
-    margin-bottom: 15px;
-}
-
-.timeline-container {
-    display: flex;
-    flex-direction: row;
-    gap: 20px;
-    justify-content: space-around;
-}
-
-.timeline {
-    flex: 1;
-    padding: 15px;
-    background: #0a0a0f;
-    border-radius: 10px;
-}
-
-.timeline h4 {
-    color: #198754;
-    margin-bottom: 10px;
-    font-size: 1.1rem;
-}
-
-.timeline-cards {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    min-height: 100px;
-    align-items: center;
-}
-
-.year-card {
-    background: linear-gradient(135deg, #198754 0%, #764ba2 100%);
-    color: white;
-    padding: 12px 15px;
-    border-radius: 8px;
-    min-width: 80px;
-    text-align: center;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
-    position: relative;
-}
-
-.year-card .year {
-    font-size: 1.3rem;
-    font-weight: bold;
-    margin-bottom: 3px;
-}
-
-.year-card .song-title {
-    font-size: 0.75rem;
-    opacity: 0.9;
-    margin-bottom: 2px;
-}
-
-.year-card .song-artist {
-    font-size: 0.7rem;
-    opacity: 0.8;
-    font-style: italic;
-}
-
-/* Guess Section */
-.guess-section {
     text-align: center;
     padding: 20px;
-    background: #0a0a0f;
-    width: 100%;
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 1001;
+    background: #02020a;
+    box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.8);
+    z-index: 100;
+    max-height: 200px;
+    overflow-y: auto;
 }
 
 .guess-options {
@@ -630,20 +502,12 @@ body {
 
 /* Responsive */
 @media (max-width: 768px) {
-    .team-scores {
+    .modal-team-scores {
         flex-direction: column;
-    }
-
-    .timeline-cards {
-        justify-content: center;
     }
 
     .final-scores {
         flex-direction: column;
-    }
-
-    .video-modal-content {
-        padding: 20px;
     }
 
     #youtube-player {

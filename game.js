@@ -31,20 +31,12 @@ function startGame() {
     gameState.selectedPlaylist = playlistSelect;
     
     // Update UI
-    document.getElementById('team1-name-display').textContent = team1Name;
-    document.getElementById('team2-name-display').textContent = team2Name;
-    document.getElementById('team1-timeline-header').textContent = `${team1Name} Tidslinje`;
-    document.getElementById('team2-timeline-header').textContent = `${team2Name} Tidslinje`;
-    
-    // Update modal team names
     document.getElementById('modal-team1-name').textContent = team1Name;
     document.getElementById('modal-team2-name').textContent = team2Name;
     
     // Switch to game screen
     document.getElementById('setup-screen').classList.remove('active');
     document.getElementById('game-screen').classList.add('active');
-    
-    updateTurnDisplay();
     
     // Automatically start the first song
     playNextSong();
@@ -72,7 +64,7 @@ async function playNextSong() {
     gameState.currentSong = song;
     gameState.usedSongIds.add(song.videoId);
     
-    // Update team indicator in video modal
+    // Update team indicator
     const currentTeam = gameState.currentTeam;
     const teamName = gameState.teams[currentTeam].name;
     const teamIndicator = document.getElementById('current-team-indicator');
@@ -80,9 +72,6 @@ async function playNextSong() {
     
     modalTeamName.textContent = teamName;
     teamIndicator.className = 'current-team-indicator team' + currentTeam;
-    
-    // Show video modal
-    document.getElementById('video-modal').classList.remove('hidden');
     
     // Show guess options BEFORE loading video
     showGuessOptions();
@@ -92,8 +81,7 @@ async function playNextSong() {
         await window.youtubeAPI.playVideo(song.videoId);
     } catch (error) {
         console.error('Error playing video:', error);
-        // Hide modal and try next song
-        document.getElementById('video-modal').classList.add('hidden');
+        // Try next song
         setTimeout(() => {
             playNextSong();
         }, 1000);
@@ -227,7 +215,6 @@ function showResult(isCorrect, position) {
         }
     }
     
-    updateTimeline();
     updateScores();
 }
 
@@ -353,53 +340,16 @@ function continueGame() {
     
     // Switch teams
     gameState.currentTeam = gameState.currentTeam === 1 ? 2 : 1;
-    updateTurnDisplay();
     
     // Automatically play next song for the next team
     playNextSong();
 }
 
-// Update timeline display
-function updateTimeline() {
-    for (let teamNum = 1; teamNum <= 2; teamNum++) {
-        const timeline = gameState.teams[teamNum].timeline;
-        const container = document.getElementById(`team${teamNum}-cards`);
-        container.innerHTML = '';
-        
-        timeline.forEach(song => {
-            const card = document.createElement('div');
-            card.className = 'year-card';
-            card.innerHTML = `
-                <div class="year">${song.year}</div>
-                <div class="song-title">${song.title}</div>
-                <div class="song-artist">${song.artist}</div>
-            `;
-            container.appendChild(card);
-        });
-    }
-}
-
 // Update scores
 function updateScores() {
-    document.getElementById('team1-points').textContent = gameState.teams[1].score;
-    document.getElementById('team2-points').textContent = gameState.teams[2].score;
-    
     // Update modal scores
     document.getElementById('modal-team1-points').textContent = gameState.teams[1].score;
     document.getElementById('modal-team2-points').textContent = gameState.teams[2].score;
-}
-
-// Update turn display
-function updateTurnDisplay() {
-    // Highlight active team
-    for (let i = 1; i <= 2; i++) {
-        const scoreDiv = document.getElementById(`team${i}-score`);
-        if (i === gameState.currentTeam) {
-            scoreDiv.classList.add('active');
-        } else {
-            scoreDiv.classList.remove('active');
-        }
-    }
 }
 
 // Show winner screen
@@ -434,7 +384,6 @@ function resetGame() {
     document.getElementById('setup-screen').classList.add('active');
     
     updateScores();
-    updateTimeline();
 }
 
 // Initialize when page loads
