@@ -36,6 +36,10 @@ function startGame() {
     document.getElementById('team1-timeline-header').textContent = `${team1Name} Tidslinje`;
     document.getElementById('team2-timeline-header').textContent = `${team2Name} Tidslinje`;
     
+    // Update modal team names
+    document.getElementById('modal-team1-name').textContent = team1Name;
+    document.getElementById('modal-team2-name').textContent = team2Name;
+    
     // Switch to game screen
     document.getElementById('setup-screen').classList.remove('active');
     document.getElementById('game-screen').classList.add('active');
@@ -185,9 +189,8 @@ function makeGuess(position) {
         isCorrect = song.year >= timeline[position - 1].year && song.year <= timeline[position].year;
     }
     
-    // Stop playback and hide video modal
+    // Stop playback (keep modal visible for result)
     window.youtubeAPI.stopVideo();
-    document.getElementById('video-modal').classList.add('hidden');
     
     // Show result
     showResult(isCorrect, position);
@@ -380,6 +383,10 @@ function updateTimeline() {
 function updateScores() {
     document.getElementById('team1-points').textContent = gameState.teams[1].score;
     document.getElementById('team2-points').textContent = gameState.teams[2].score;
+    
+    // Update modal scores
+    document.getElementById('modal-team1-points').textContent = gameState.teams[1].score;
+    document.getElementById('modal-team2-points').textContent = gameState.teams[2].score;
 }
 
 // Update turn display

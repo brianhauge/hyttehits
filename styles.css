@@ -272,10 +272,40 @@ body {
     background: #fb8500;
 }
 
+.modal-team-scores {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+}
+
+.modal-team-score {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    flex: 1;
+}
+
+.modal-team-name {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: white;
+}
+
+.modal-score {
+    font-size: 1rem;
+    color: white;
+    opacity: 0.9;
+}
+
 .team-indicator-content {
     font-size: 1.5rem;
     font-weight: bold;
     color: white;
+    flex: 1;
+    text-align: center;
 }
 
 .team-indicator-content #modal-team-name {
@@ -493,7 +523,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
+    z-index: 1100;
 }
 
 .result-content {
