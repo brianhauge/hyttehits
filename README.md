@@ -87,18 +87,9 @@ The game includes 80+ popular songs from each year between 2016-2025, including 
 ## Requirements
 
 - Modern web browser (Chrome, Firefox, Safari, Edge)
+  - **Recommended: [Brave Browser](https://brave.com/)** - Blocks YouTube ads for uninterrupted gameplay
 - Internet connection (for YouTube videos)
 - Local web server (see setup instructions)
-
-## Why YouTube Instead of Spotify?
-
-YouTube integration doesn't require:
-- API credentials
-- OAuth authentication
-- Premium subscription
-- App approval from Spotify
-
-This makes the game much easier to set up and play!
 
 ## Troubleshooting
 
