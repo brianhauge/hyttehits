@@ -1,6 +1,6 @@
-# HITSTER - Music Party Game
+# Hytte Hits - Music Party Game
 
-A web-based implementation of the Hitster music party game with YouTube integration. Two teams compete to guess when songs were released by placing them in chronological order on their timeline.
+A web-based implementation of the Hytte Hits music party game with YouTube integration. Two teams compete to guess when songs were released by placing them in chronological order on their timeline.
 
 ## Features
 
@@ -72,7 +72,7 @@ A web-based implementation of the Hitster music party game with YouTube integrat
 - Songs are from 2016-2025 only
 - Teams must place songs in the correct chronological position
 - The timeline shows all correctly guessed songs in ascending order
-- First team to reach 10 points becomes the HITSTER!
+- First team to reach 10 points becomes the Hytte Hits champion!
 
 ## Song Database
 
@@ -155,10 +155,9 @@ To find a YouTube video ID:
 
 ## License
 
-This is a fan-made implementation inspired by the Hitster board game. All rights to the Hitster game concept belong to the original creators.
+This is a custom implementation of a music party game.
 
 ## Credits
 
-- Original Hitster game by Marcus Carleson and Fredrik Björeman
-- Web implementation created for educational purposes
+- Web implementation created for entertainment purposes
 - Music provided by YouTube
