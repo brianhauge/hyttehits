@@ -259,7 +259,7 @@ body {
 /* Video Container - Center of Screen */
 .video-container {
     position: fixed;
-    top: 100px;
+    top: -10px;
     left: 0;
     right: 0;
     bottom: 200px;
@@ -271,25 +271,11 @@ body {
 
 #youtube-player {
     width: 95vw;
-    height: calc(100vh - 320px);
+    height: calc(100vh - 190px);
     max-width: none;
     border-radius: 0;
     margin: 0;
     display: block;
-}
-
-/* Overlay to hide YouTube video title at top */
-.video-overlay {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 95vw;
-    height: calc(100vh - 320px);
-    background: transparent;
-    pointer-events: none;
-    z-index: 10;
-    border-top: 60px solid #000000;
 }
 
 /* Guess Section - Footer with Timeline Cards */
