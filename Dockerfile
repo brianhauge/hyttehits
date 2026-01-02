@@ -6,7 +6,6 @@ COPY index.html /usr/share/nginx/hyttehits/
 COPY styles.css /usr/share/nginx/hyttehits/
 COPY game.js /usr/share/nginx/hyttehits/
 COPY youtube.js /usr/share/nginx/hyttehits/
-COPY README.md /usr/share/nginx/hyttehits/
 
 # Copy custom nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
