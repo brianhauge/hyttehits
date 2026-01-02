@@ -493,17 +493,240 @@ body {
     color: #ffffff;
 }
 
-/* Responsive */
+/* Responsive - Mobile Styles */
 @media (max-width: 768px) {
-    .modal-team-scores {
-        flex-direction: column;
+    /* Setup Screen Mobile */
+    .setup-content {
+        padding: 20px;
+        margin: 10px;
     }
-
+    
+    .setup-content h2 {
+        font-size: 1.5rem;
+        margin-bottom: 20px;
+    }
+    
+    .game-info p {
+        font-size: 1rem;
+    }
+    
+    #team-setup h3 {
+        font-size: 1.1rem;
+        margin: 20px 0 15px 0;
+    }
+    
+    .team-input input,
+    .team-input select {
+        padding: 10px;
+        font-size: 0.9rem;
+    }
+    
+    .btn {
+        padding: 12px 20px;
+        font-size: 1rem;
+    }
+    
+    /* Game Screen Mobile */
+    .current-team-indicator {
+        padding: 10px 15px;
+    }
+    
+    .modal-team-scores {
+        flex-direction: row;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    
+    .modal-team-score {
+        flex: 0 1 auto;
+        min-width: 80px;
+    }
+    
+    .modal-team-name {
+        font-size: 0.9rem;
+    }
+    
+    .modal-score {
+        font-size: 0.8rem;
+    }
+    
+    .team-indicator-content {
+        font-size: 1rem;
+        flex: 1 1 100%;
+        order: -1;
+        margin-bottom: 5px;
+    }
+    
+    .team-indicator-content #modal-team-name {
+        font-size: 1.2rem;
+    }
+    
+    /* Video Container Mobile */
+    .video-container {
+        bottom: 180px;
+        top: 0;
+    }
+    
+    #youtube-player {
+        width: 100vw;
+        height: calc(100vh - 180px);
+    }
+    
+    /* Guess Section Mobile */
+    .guess-section {
+        padding: 10px;
+        max-height: 180px;
+    }
+    
+    .guess-options {
+        gap: 8px;
+        padding: 5px;
+    }
+    
+    .guess-btn {
+        padding: 12px 18px;
+        font-size: 0.9rem;
+        min-width: 100px;
+    }
+    
+    .guess-year-card {
+        padding: 12px 15px;
+        min-width: 120px;
+    }
+    
+    .guess-year-card .year {
+        font-size: 1.5rem;
+    }
+    
+    .guess-year-card .song-title {
+        font-size: 0.8rem;
+    }
+    
+    .guess-year-card .song-artist {
+        font-size: 0.7rem;
+    }
+    
+    /* Result Section Mobile */
+    .result-content {
+        padding: 30px 20px;
+        margin: 10px;
+        max-width: 90%;
+    }
+    
+    .result-content h3 {
+        font-size: 1.8rem;
+        margin-bottom: 20px;
+    }
+    
+    .song-reveal {
+        margin: 20px 0;
+        padding: 15px;
+    }
+    
+    .reveal-song {
+        font-size: 1.2rem;
+    }
+    
+    .reveal-artist {
+        font-size: 1rem;
+    }
+    
+    .reveal-year {
+        font-size: 1.4rem;
+    }
+    
+    /* Winner Screen Mobile */
+    .winner-content {
+        padding: 30px 20px;
+        margin: 10px;
+        max-width: 90%;
+    }
+    
+    .winner-content h2 {
+        font-size: 2rem;
+        margin-bottom: 15px;
+    }
+    
+    .winner-content h3 {
+        font-size: 1.8rem;
+        margin-bottom: 10px;
+    }
+    
+    .winner-message {
+        font-size: 1.2rem;
+        margin-bottom: 30px;
+    }
+    
     .final-scores {
         flex-direction: column;
+        gap: 15px;
+        margin-bottom: 30px;
     }
+    
+    .final-score {
+        padding: 15px;
+        min-width: 120px;
+    }
+    
+    .final-score h4 {
+        font-size: 1.2rem;
+    }
+    
+    .final-score p {
+        font-size: 1rem;
+    }
+}
 
-    #youtube-player {
-        height: 250px;
+/* Extra small mobile devices */
+@media (max-width: 480px) {
+    .setup-content {
+        padding: 15px;
+    }
+    
+    .setup-content h2 {
+        font-size: 1.3rem;
+    }
+    
+    .modal-team-name {
+        font-size: 0.8rem;
+    }
+    
+    .modal-score {
+        font-size: 0.75rem;
+    }
+    
+    .team-indicator-content {
+        font-size: 0.9rem;
+    }
+    
+    .team-indicator-content #modal-team-name {
+        font-size: 1.1rem;
+    }
+    
+    .guess-btn {
+        padding: 10px 15px;
+        font-size: 0.85rem;
+        min-width: 90px;
+    }
+    
+    .guess-year-card {
+        padding: 10px 12px;
+        min-width: 100px;
+    }
+    
+    .guess-year-card .year {
+        font-size: 1.3rem;
+    }
+    
+    .result-content h3 {
+        font-size: 1.5rem;
+    }
+    
+    .winner-content h2 {
+        font-size: 1.6rem;
+    }
+    
+    .winner-content h3 {
+        font-size: 1.5rem;
     }
 }
