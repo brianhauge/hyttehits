@@ -376,7 +376,6 @@ document.getElementById('addSongForm').addEventListener('submit', async (e) => {
         title: document.getElementById('addTitle').value,
         artist: document.getElementById('addArtist').value,
         year: parseInt(document.getElementById('addYear').value),
-        playlist: document.getElementById('addPlaylist').value,
         categories: selectedCategories
     };
     
@@ -754,10 +753,10 @@ const gameLimit = 50;
 
 async function loadGameLogs() {
     try {
-        const playlist = document.getElementById('gamePlaylistFilter').value;
+        const category = document.getElementById('gameCategoryFilter').value;
         
         let url = `/admin/game-logs?limit=${gameLimit}&offset=${gamePage * gameLimit}`;
-        if (playlist) url += `&playlist=${playlist}`;
+        if (category) url += `&category=${category}`;
         
         const data = await apiRequest(url);
         displayGameLogs(data);
@@ -773,8 +772,8 @@ async function loadGameStats() {
         const stats = await apiRequest('/admin/game-stats');
         
         document.getElementById('gameTotalPlays').textContent = stats.totalPlays || 0;
-        document.getElementById('gameModernPlays').textContent = stats.byPlaylist?.modern || 0;
-        document.getElementById('gameClassicPlays').textContent = stats.byPlaylist?.classic || 0;
+        document.getElementById('gameModernPlays').textContent = stats.byCategory?.Modern || 0;
+        document.getElementById('gameClassicPlays').textContent = stats.byCategory?.Classic || 0;
         document.getElementById('gameSuccessRate').textContent = stats.successRate ? 
             `${stats.successRate.percentage}%` : '0%';
         
@@ -809,7 +808,7 @@ function displayGameLogs(data) {
             <td>${escapeHtml(log.title)}</td>
             <td>${escapeHtml(log.artist)}</td>
             <td>${escapeHtml(log.team_name || 'N/A')}</td>
-            <td>${escapeHtml(log.playlist)}</td>
+            <td>${escapeHtml(log.category)}</td>
             <td>${log.guessed_correctly === null ? 'N/A' : (log.guessed_correctly ? '✓' : '✗')}</td>
         </tr>
     `).join('');
@@ -825,7 +824,7 @@ document.getElementById('refreshGameBtn').addEventListener('click', () => {
     loadGameStats();
 });
 
-document.getElementById('gamePlaylistFilter').addEventListener('change', () => {
+document.getElementById('gameCategoryFilter').addEventListener('change', () => {
     gamePage = 0;
     loadGameLogs();
 });

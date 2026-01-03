@@ -6,7 +6,7 @@ A web-based implementation of the Hytte Hits music party game with YouTube integ
 
 - Two-team gameplay
 - YouTube integration for playing real music
-- PostgreSQL database with 388 songs from modern (2016-2025) and classic (1952-2025) playlists
+- PostgreSQL database with 388 songs from Modern (2016-2025) and Classic (1952-2025) categories
 - Automatic song status tracking (working/broken)
 - Interactive timeline showing guessed years in ascending order
 - Guess if a song was released before, between, or after existing years
@@ -71,7 +71,7 @@ A web-based implementation of the Hytte Hits music party game with YouTube integ
 5. **Play the game**
    - Open your browser and go to `http://localhost:8081`
    - Enter team names
-   - Select playlist (Modern or Classic)
+   - Select category (Modern or Classic)
    - Click "Start Game"
    - Enjoy!
 
@@ -92,8 +92,8 @@ DATABASE_URL=postgresql://hyttehits:hyttehits123@localhost:5432/hyttehits npm st
 
 ## How to Play
 
-1. **Setup**: Two teams enter their names and select a playlist
-2. **Play a Song**: The current team hears a random track from the selected playlist
+1. **Setup**: Two teams enter their names and select a category
+2. **Play a Song**: The current team hears a random track from the selected category
 3. **Make a Guess**: The team guesses where the song belongs in their timeline:
    - Before all existing years
    - Between two years
@@ -115,7 +115,7 @@ DATABASE_URL=postgresql://hyttehits:hyttehits123@localhost:5432/hyttehits npm st
 | artist       | VARCHAR   | Artist name                           |
 | year         | INTEGER   | Release year                          |
 | video_id     | VARCHAR   | YouTube video ID (unique)             |
-| playlist     | VARCHAR   | Playlist type (modern/classic)        |
+| category     | VARCHAR   | Category name (e.g., Modern, Classic)        |
 | status       | VARCHAR   | Song status (working/broken)          |
 | last_checked | TIMESTAMP | Last time status was checked          |
 | created_at   | TIMESTAMP | Record creation time                  |
@@ -162,7 +162,7 @@ DATABASE_URL=postgresql://hyttehits:hyttehits123@localhost:5432/hyttehits npm st
 | id                | SERIAL    | Primary key                           |
 | video_id          | VARCHAR   | Foreign key to songs table            |
 | team_name         | VARCHAR   | Team that played the song             |
-| playlist          | VARCHAR   | Playlist type (modern/classic)        |
+| category          | VARCHAR   | Category name (e.g., Modern, Classic)        |
 | guessed_correctly | BOOLEAN   | Whether the guess was correct         |
 | session_id        | VARCHAR   | Browser session ID                    |
 | ip_address        | VARCHAR   | Client IP address (IPv4/IPv6)         |
@@ -215,11 +215,11 @@ DATABASE_URL=postgresql://hyttehits:hyttehits123@localhost:5432/hyttehits npm st
 #### Game Logs Tab
 - View game play statistics
 - Total plays count
-- Plays by playlist (Modern/Classic)
+- Plays by category (Modern/Classic)
 - Success rate (percentage of correct guesses)
 - Most played songs leaderboard
 - Recent game plays log
-- Filter by playlist
+- Filter by category
 - Pagination support (50 records per page)
 - Track which team played each song
 - See guess results (correct/incorrect)
@@ -253,12 +253,12 @@ Note: The script will prevent duplicate usernames and enforce minimum password l
 
 #### Get All Songs
 ```
-GET /api/songs?playlist={modern|classic}&status={working|broken}
+GET /api/songs?category={Modern|Classic}&status={working|broken}
 ```
 
 #### Get Random Song
 ```
-GET /api/songs/random?playlist={modern|classic}&exclude={videoId1,videoId2}
+GET /api/songs/random?category={Modern|Classic}&exclude={videoId1,videoId2}
 ```
 
 #### Get Song by Video ID
@@ -347,8 +347,8 @@ GET /api/admin/stats
 Headers: { "Authorization": "Bearer <token>" }
 Response: {
   "total": 388,
-  "modern": 136,
-  "classic": 252,
+  "Modern": 136,
+  "Classic": 252,
   "working": 350,
   "broken": 10,
   "unchecked": 28
@@ -413,7 +413,7 @@ POST /api/game-logs
 Body: {
   "video_id": "dQw4w9WgXcQ",
   "team_name": "Team 1",
-  "playlist": "modern",
+  "category": "Modern",
   "guessed_correctly": true,
   "session_id": "session_123456"
 }
@@ -421,7 +421,7 @@ Body: {
 
 Get game logs:
 ```
-GET /api/admin/game-logs?limit=50&offset=0&playlist=modern
+GET /api/admin/game-logs?limit=50&offset=0&category=Modern
 Headers: { "Authorization": "Bearer <token>" }
 Response: {
   "logs": [...],
@@ -437,9 +437,9 @@ GET /api/admin/game-stats
 Headers: { "Authorization": "Bearer <token>" }
 Response: {
   "totalPlays": 500,
-  "byPlaylist": {
-    "modern": 300,
-    "classic": 200
+  "byCategory": {
+    "Modern": 300,
+    "Classic": 200
   },
   "mostPlayed": [...],
   "successRate": {
@@ -458,13 +458,13 @@ The application automatically tracks song availability:
 - Only "working" songs are returned in random song queries
 - This ensures a smooth gameplay experience without broken videos
 
-## Playlists
+## Categorys
 
-### Modern Playlist (2016-2025)
+### Modern Category (2016-2025)
 150+ popular songs from recent years including hits from:
 - The Weeknd, Taylor Swift, Drake, Olivia Rodrigo, Harry Styles, and many more!
 
-### Classic Playlist (1950s-2015)
+### Classic Category (1950s-2015)
 Iconic songs spanning 60+ years of music history including:
 - The Beatles, Queen, Michael Jackson, Madonna, and more!
 

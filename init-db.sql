@@ -110,7 +110,7 @@ CREATE TABLE IF NOT EXISTS song_categories (
 CREATE INDEX idx_song_categories_song_id ON song_categories(song_id);
 CREATE INDEX idx_song_categories_category_id ON song_categories(category_id);
 
--- Insert default categories (migrating from playlist field)
+-- Insert default categories
 INSERT INTO categories (name, description) VALUES
     ('Modern', 'Modern songs (2016-2025)'),
     ('Classic', 'Classic songs (1952-2025)')

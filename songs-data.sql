@@ -1,5 +1,5 @@
 -- Song data for Hytte Hits game
--- This file contains all songs for both modern and classic playlists
+-- This file contains all songs for both Modern and Classic categories
 
 -- Modern songs (2016-2025)
 INSERT INTO songs (title, artist, year, video_id, status) VALUES

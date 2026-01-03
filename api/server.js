@@ -317,7 +317,7 @@ app.put('/api/admin/songs/:videoId', authenticateToken, async (req, res) => {
     const { videoId } = req.params;
     const { title, artist, year, video_id, status, categories } = req.body;
     
-    // Update song (playlist is kept for backwards compatibility but not required)
+    // Update song
     const result = await client.query(
       'UPDATE songs SET title = $1, artist = $2, year = $3, video_id = $4, status = $5 WHERE video_id = $6 RETURNING *',
       [title, artist, year, video_id, status || 'working', videoId]
@@ -617,7 +617,7 @@ app.get('/api/admin/songs/broken', authenticateToken, async (req, res) => {
       LEFT JOIN categories c ON sc.category_id = c.id
       WHERE s.status = 'broken'
       GROUP BY s.id
-      ORDER BY s.playlist, s.year
+      ORDER BY s.year
     `);
     res.json(result.rows);
   } catch (err) {
