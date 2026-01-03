@@ -104,6 +104,7 @@ function showAdmin() {
     document.getElementById('adminScreen').classList.remove('hidden');
     loadAllSongs();
     loadStats();
+    loadCategoriesForForms();
 }
 
 function showMessage(elementId, message, type = 'success') {
@@ -141,6 +142,8 @@ function switchTab(tabName) {
     } else if (tabName === 'game') {
         loadGameLogs();
         loadGameStats();
+    } else if (tabName === 'categories') {
+        loadCategories();
     }
 }
 
@@ -186,6 +189,34 @@ document.getElementById('searchInput').addEventListener('input', (e) => {
 
 // Load All Songs
 let allSongs = [];
+let categoriesForForms = [];
+
+async function loadCategoriesForForms() {
+    try {
+        const data = await apiRequest('/admin/categories');
+        categoriesForForms = data;
+        populateCategoryCheckboxes();
+    } catch (error) {
+        console.error('Error loading categories for forms:', error);
+    }
+}
+
+function populateCategoryCheckboxes() {
+    const addContainer = document.getElementById('addCategoriesCheckboxes');
+    const editContainer = document.getElementById('editCategoriesCheckboxes');
+    
+    const checkboxHTML = categoriesForForms.map(cat => `
+        <div style="margin-bottom: 8px;">
+            <label style="display: flex; align-items: center; cursor: pointer;">
+                <input type="checkbox" name="category" value="${cat.id}" style="margin-right: 8px;">
+                <span>${escapeHtml(cat.name)}${cat.description ? ` - ${escapeHtml(cat.description)}` : ''}</span>
+            </label>
+        </div>
+    `).join('');
+    
+    addContainer.innerHTML = checkboxHTML;
+    editContainer.innerHTML = checkboxHTML;
+}
 
 async function loadAllSongs() {
     try {
@@ -207,12 +238,21 @@ function displaySongs(songs) {
         return;
     }
     
-    tbody.innerHTML = songs.map(song => `
+    tbody.innerHTML = songs.map(song => {
+        // Format categories
+        let categoriesText = '';
+        if (song.categories && Array.isArray(song.categories) && song.categories.length > 0) {
+            categoriesText = song.categories.map(c => c.name).join(', ');
+        } else {
+            categoriesText = '-';
+        }
+        
+        return `
         <tr>
             <td>${escapeHtml(song.video_id)}</td>
             <td>${escapeHtml(song.title)}</td>
             <td>${escapeHtml(song.artist)}</td>
-            <td>${escapeHtml(song.category)}</td>
+            <td>${escapeHtml(categoriesText)}</td>
             <td><span class="status-badge status-${song.status || 'unknown'}">${song.status || 'unknown'}</span></td>
             <td>${song.last_checked ? new Date(song.last_checked).toLocaleString() : 'Never'}</td>
             <td class="action-btns">
@@ -220,7 +260,8 @@ function displaySongs(songs) {
                 <button class="btn btn-danger" onclick="deleteSong('${song.video_id}')">Delete</button>
             </td>
         </tr>
-    `).join('');
+    `;
+    }).join('');
 }
 
 // Edit Song
@@ -229,10 +270,24 @@ function editSong(videoId) {
     if (!song) return;
     
     document.getElementById('editOriginalVideoId').value = videoId;
+    document.getElementById('editSongId').value = song.id;
     document.getElementById('editVideoId').value = song.video_id;
     document.getElementById('editTitle').value = song.title;
     document.getElementById('editArtist').value = song.artist;
-    document.getElementById('editCategory').value = song.category;
+    document.getElementById('editYear').value = song.year;
+    
+    // Uncheck all checkboxes first
+    document.querySelectorAll('#editCategoriesCheckboxes input[type="checkbox"]').forEach(cb => {
+        cb.checked = false;
+    });
+    
+    // Check the categories that belong to this song
+    if (song.categories && Array.isArray(song.categories)) {
+        song.categories.forEach(cat => {
+            const checkbox = document.querySelector(`#editCategoriesCheckboxes input[value="${cat.id}"]`);
+            if (checkbox) checkbox.checked = true;
+        });
+    }
     
     document.getElementById('editModal').classList.remove('hidden');
 }
@@ -242,11 +297,24 @@ document.getElementById('editSongForm').addEventListener('submit', async (e) => 
     e.preventDefault();
     
     const originalVideoId = document.getElementById('editOriginalVideoId').value;
+    
+    // Get selected categories
+    const selectedCategories = Array.from(
+        document.querySelectorAll('#editCategoriesCheckboxes input[type="checkbox"]:checked')
+    ).map(cb => parseInt(cb.value));
+    
+    if (selectedCategories.length === 0) {
+        showMessage('editSongMessage', 'Please select at least one category', 'error');
+        return;
+    }
+    
     const formData = {
         video_id: document.getElementById('editVideoId').value,
         title: document.getElementById('editTitle').value,
         artist: document.getElementById('editArtist').value,
-        category: document.getElementById('editCategory').value
+        year: parseInt(document.getElementById('editYear').value),
+        status: 'working',
+        categories: selectedCategories
     };
     
     try {
@@ -270,6 +338,7 @@ document.querySelectorAll('.modal-close').forEach(btn => {
     btn.addEventListener('click', () => {
         document.getElementById('editModal').classList.add('hidden');
         document.getElementById('userModal').classList.add('hidden');
+        document.getElementById('categoryModal').classList.add('hidden');
     });
 });
 
@@ -292,11 +361,23 @@ async function deleteSong(videoId) {
 document.getElementById('addSongForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     
+    // Get selected categories
+    const selectedCategories = Array.from(
+        document.querySelectorAll('#addCategoriesCheckboxes input[type="checkbox"]:checked')
+    ).map(cb => parseInt(cb.value));
+    
+    if (selectedCategories.length === 0) {
+        showMessage('addSongMessage', 'Please select at least one category', 'error');
+        return;
+    }
+    
     const formData = {
         video_id: document.getElementById('addVideoId').value,
         title: document.getElementById('addTitle').value,
         artist: document.getElementById('addArtist').value,
-        category: document.getElementById('addCategory').value
+        year: parseInt(document.getElementById('addYear').value),
+        playlist: document.getElementById('addPlaylist').value,
+        categories: selectedCategories
     };
     
     try {
@@ -307,6 +388,11 @@ document.getElementById('addSongForm').addEventListener('submit', async (e) => {
         
         showMessage('addSongMessage', 'Song added successfully!', 'success');
         document.getElementById('addSongForm').reset();
+        
+        // Uncheck all category checkboxes
+        document.querySelectorAll('#addCategoriesCheckboxes input[type="checkbox"]').forEach(cb => {
+            cb.checked = false;
+        });
         
         // Reload songs in background
         loadAllSongs();
@@ -390,12 +476,21 @@ function displayBrokenSongs(songs) {
         return;
     }
     
-    tbody.innerHTML = songs.map(song => `
+    tbody.innerHTML = songs.map(song => {
+        // Format categories
+        let categoriesText = '';
+        if (song.categories && Array.isArray(song.categories) && song.categories.length > 0) {
+            categoriesText = song.categories.map(c => c.name).join(', ');
+        } else {
+            categoriesText = '-';
+        }
+        
+        return `
         <tr>
             <td>${escapeHtml(song.video_id)}</td>
             <td>${escapeHtml(song.title)}</td>
             <td>${escapeHtml(song.artist)}</td>
-            <td>${escapeHtml(song.category)}</td>
+            <td>${escapeHtml(categoriesText)}</td>
             <td>${song.last_checked ? new Date(song.last_checked).toLocaleString() : 'Never'}</td>
             <td class="action-btns">
                 <button class="btn btn-success" onclick="findAlternative('${escapeHtml(song.title)}', '${escapeHtml(song.artist)}')">Find Alternative</button>
@@ -403,7 +498,8 @@ function displayBrokenSongs(songs) {
                 <button class="btn btn-danger" onclick="deleteSong('${song.video_id}')">Delete</button>
             </td>
         </tr>
-    `).join('');
+    `;
+    }).join('');
 }
 
 // Find Alternative
@@ -744,6 +840,127 @@ document.getElementById('gamePrevBtn').addEventListener('click', () => {
 document.getElementById('gameNextBtn').addEventListener('click', () => {
     gamePage++;
     loadGameLogs();
+});
+
+// ============================================
+// CATEGORY MANAGEMENT
+// ============================================
+
+let allCategories = [];
+
+async function loadCategories() {
+    try {
+        const data = await apiRequest('/admin/categories');
+        allCategories = data;
+        displayCategories(allCategories);
+    } catch (error) {
+        console.error('Error loading categories:', error);
+        document.getElementById('categoriesTableBody').innerHTML = 
+            `<tr><td colspan="6" class="loading">Error loading categories: ${error.message}</td></tr>`;
+    }
+}
+
+function displayCategories(categories) {
+    const tbody = document.getElementById('categoriesTableBody');
+    
+    if (categories.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="loading">No categories found</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = categories.map(category => `
+        <tr>
+            <td>${category.id}</td>
+            <td>${escapeHtml(category.name)}</td>
+            <td>${escapeHtml(category.description || '')}</td>
+            <td>${category.song_count}</td>
+            <td>${new Date(category.created_at).toLocaleString()}</td>
+            <td class="action-btns">
+                <button class="btn btn-secondary" onclick="editCategory(${category.id})">Edit</button>
+                <button class="btn btn-danger" onclick="deleteCategory(${category.id})">Delete</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// Add Category Button
+document.getElementById('addCategoryBtn').addEventListener('click', () => {
+    document.getElementById('categoryModalTitle').textContent = 'Add Category';
+    document.getElementById('categoryId').value = '';
+    document.getElementById('categoryName').value = '';
+    document.getElementById('categoryDescription').value = '';
+    document.getElementById('categoryModal').classList.remove('hidden');
+});
+
+// Edit Category
+function editCategory(id) {
+    const category = allCategories.find(c => c.id === id);
+    if (!category) return;
+    
+    document.getElementById('categoryModalTitle').textContent = 'Edit Category';
+    document.getElementById('categoryId').value = category.id;
+    document.getElementById('categoryName').value = category.name;
+    document.getElementById('categoryDescription').value = category.description || '';
+    document.getElementById('categoryModal').classList.remove('hidden');
+}
+
+// Delete Category
+async function deleteCategory(id) {
+    const category = allCategories.find(c => c.id === id);
+    if (!category) return;
+    
+    if (parseInt(category.song_count) > 0) {
+        alert(`Cannot delete category "${category.name}" because it has ${category.song_count} songs associated with it. Remove songs from this category first.`);
+        return;
+    }
+    
+    if (!confirm(`Are you sure you want to delete category "${category.name}"?`)) {
+        return;
+    }
+    
+    try {
+        await apiRequest(`/admin/categories/${id}`, { method: 'DELETE' });
+        alert('Category deleted successfully!');
+        loadCategories();
+    } catch (error) {
+        alert(`Error deleting category: ${error.message}`);
+    }
+}
+
+// Category Form Submit
+document.getElementById('categoryForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const categoryId = document.getElementById('categoryId').value;
+    const formData = {
+        name: document.getElementById('categoryName').value,
+        description: document.getElementById('categoryDescription').value
+    };
+    
+    try {
+        if (categoryId) {
+            // Update
+            await apiRequest(`/admin/categories/${categoryId}`, {
+                method: 'PUT',
+                body: JSON.stringify(formData)
+            });
+            showMessage('categoryMessage', 'Category updated successfully!', 'success');
+        } else {
+            // Create
+            await apiRequest('/admin/categories', {
+                method: 'POST',
+                body: JSON.stringify(formData)
+            });
+            showMessage('categoryMessage', 'Category created successfully!', 'success');
+        }
+        
+        setTimeout(() => {
+            document.getElementById('categoryModal').classList.add('hidden');
+            loadCategories();
+        }, 1500);
+    } catch (error) {
+        showMessage('categoryMessage', error.message, 'error');
+    }
 });
 
 // Helper Functions

@@ -167,24 +167,41 @@ app.get('/api/auth/verify', authenticateToken, (req, res) => {
 // PUBLIC SONG ROUTES
 // ============================================
 
-// Get all songs
+// Get all songs with categories
 app.get('/api/songs', async (req, res) => {
   try {
-    const { playlist, status } = req.query;
-    let query = 'SELECT * FROM songs WHERE 1=1';
+    const { status, category } = req.query;
+    let query = `
+      SELECT s.*, 
+        COALESCE(
+          json_agg(
+            json_build_object('id', c.id, 'name', c.name) 
+            ORDER BY c.name
+          ) FILTER (WHERE c.id IS NOT NULL), 
+          '[]'
+        ) as categories
+      FROM songs s
+      LEFT JOIN song_categories sc ON s.id = sc.song_id
+      LEFT JOIN categories c ON sc.category_id = c.id
+      WHERE 1=1
+    `;
     const params = [];
-    
-    if (playlist) {
-      params.push(playlist);
-      query += ` AND playlist = $${params.length}`;
-    }
     
     if (status) {
       params.push(status);
-      query += ` AND status = $${params.length}`;
+      query += ` AND s.status = $${params.length}`;
     }
     
-    query += ' ORDER BY year, title';
+    if (category) {
+      params.push(category);
+      query += ` AND EXISTS (
+        SELECT 1 FROM song_categories sc2 
+        JOIN categories c2 ON sc2.category_id = c2.id 
+        WHERE sc2.song_id = s.id AND c2.name = $${params.length}
+      )`;
+    }
+    
+    query += ' GROUP BY s.id ORDER BY s.year, s.title';
     
     const result = await pool.query(query, params);
     res.json(result.rows);
@@ -197,22 +214,39 @@ app.get('/api/songs', async (req, res) => {
 // Get a random song
 app.get('/api/songs/random', async (req, res) => {
   try {
-    const { playlist, exclude } = req.query;
-    let query = 'SELECT * FROM songs WHERE status = $1';
+    const { category, exclude } = req.query;
+    let query = `
+      SELECT s.*, 
+        COALESCE(
+          json_agg(
+            json_build_object('id', c.id, 'name', c.name) 
+            ORDER BY c.name
+          ) FILTER (WHERE c.id IS NOT NULL), 
+          '[]'
+        ) as categories
+      FROM songs s
+      LEFT JOIN song_categories sc ON s.id = sc.song_id
+      LEFT JOIN categories c ON sc.category_id = c.id
+      WHERE s.status = $1
+    `;
     const params = ['working'];
     
-    if (playlist) {
-      params.push(playlist);
-      query += ` AND playlist = $${params.length}`;
+    if (category) {
+      params.push(category);
+      query += ` AND EXISTS (
+        SELECT 1 FROM song_categories sc2 
+        JOIN categories c2 ON sc2.category_id = c2.id 
+        WHERE sc2.song_id = s.id AND c2.name = $${params.length}
+      )`;
     }
     
     if (exclude) {
       const excludeIds = exclude.split(',');
       params.push(excludeIds);
-      query += ` AND video_id != ALL($${params.length})`;
+      query += ` AND s.video_id != ALL($${params.length})`;
     }
     
-    query += ' ORDER BY RANDOM() LIMIT 1';
+    query += ' GROUP BY s.id ORDER BY RANDOM() LIMIT 1';
     
     const result = await pool.query(query, params);
     
@@ -276,58 +310,143 @@ app.patch('/api/songs/:videoId/status', async (req, res) => {
 
 // Update song
 app.put('/api/admin/songs/:videoId', authenticateToken, async (req, res) => {
+  const client = await pool.connect();
   try {
-    const { videoId } = req.params;
-    const { title, artist, year, video_id, playlist, status } = req.body;
+    await client.query('BEGIN');
     
-    const result = await pool.query(
-      'UPDATE songs SET title = $1, artist = $2, year = $3, video_id = $4, playlist = $5, status = $6 WHERE video_id = $7 RETURNING *',
-      [title, artist, year, video_id, playlist, status, videoId]
+    const { videoId } = req.params;
+    const { title, artist, year, video_id, status, categories } = req.body;
+    
+    // Update song (playlist is kept for backwards compatibility but not required)
+    const result = await client.query(
+      'UPDATE songs SET title = $1, artist = $2, year = $3, video_id = $4, status = $5 WHERE video_id = $6 RETURNING *',
+      [title, artist, year, video_id, status || 'working', videoId]
     );
     
     if (result.rows.length === 0) {
+      await client.query('ROLLBACK');
       return res.status(404).json({ error: 'Song not found' });
     }
+    
+    const song = result.rows[0];
+    
+    // Update categories if provided
+    if (categories && Array.isArray(categories)) {
+      // Delete existing categories
+      await client.query('DELETE FROM song_categories WHERE song_id = $1', [song.id]);
+      
+      // Insert new categories
+      for (const categoryId of categories) {
+        await client.query(
+          'INSERT INTO song_categories (song_id, category_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+          [song.id, categoryId]
+        );
+      }
+    }
+    
+    await client.query('COMMIT');
     
     // Log audit
     await logAudit(req.user.user_id, 'update', 'song', video_id, { oldVideoId: videoId, newData: req.body }, getClientIp(req));
     
-    res.json(result.rows[0]);
+    // Fetch updated song with categories
+    const updatedResult = await pool.query(`
+      SELECT s.*, 
+        COALESCE(
+          json_agg(
+            json_build_object('id', c.id, 'name', c.name) 
+            ORDER BY c.name
+          ) FILTER (WHERE c.id IS NOT NULL), 
+          '[]'
+        ) as categories
+      FROM songs s
+      LEFT JOIN song_categories sc ON s.id = sc.song_id
+      LEFT JOIN categories c ON sc.category_id = c.id
+      WHERE s.video_id = $1
+      GROUP BY s.id
+    `, [video_id]);
+    
+    res.json(updatedResult.rows[0]);
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error('Error updating song:', err);
     if (err.code === '23505') {
       res.status(409).json({ error: 'Song with this video ID already exists' });
     } else {
       res.status(500).json({ error: 'Internal server error' });
     }
+  } finally {
+    client.release();
   }
 });
 
 // Add a new song
 app.post('/api/admin/songs', authenticateToken, async (req, res) => {
+  const client = await pool.connect();
   try {
-    const { title, artist, year, video_id, playlist, status } = req.body;
+    await client.query('BEGIN');
     
-    if (!title || !artist || !year || !video_id || !playlist) {
-      return res.status(400).json({ error: 'Missing required fields' });
+    const { title, artist, year, video_id, status, categories } = req.body;
+    
+    if (!title || !artist || !year || !video_id) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'Missing required fields: title, artist, year, video_id' });
     }
     
-    const result = await pool.query(
+    if (!categories || !Array.isArray(categories) || categories.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'At least one category is required' });
+    }
+    
+    // Insert song (set playlist to 'modern' as default for backwards compatibility)
+    const result = await client.query(
       'INSERT INTO songs (title, artist, year, video_id, playlist, status) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [title, artist, year, video_id, playlist, status || 'working']
+      [title, artist, year, video_id, 'modern', status || 'working']
     );
     
-    // Log audit
-    await logAudit(req.user.user_id, 'create', 'song', video_id, { title, artist, year, playlist }, getClientIp(req));
+    const song = result.rows[0];
     
-    res.status(201).json(result.rows[0]);
+    // Insert categories
+    for (const categoryId of categories) {
+      await client.query(
+        'INSERT INTO song_categories (song_id, category_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+        [song.id, categoryId]
+      );
+    }
+    
+    await client.query('COMMIT');
+    
+    // Log audit
+    await logAudit(req.user.user_id, 'create', 'song', video_id, { title, artist, year, categories }, getClientIp(req));
+    
+    // Fetch created song with categories
+    const createdResult = await pool.query(`
+      SELECT s.*, 
+        COALESCE(
+          json_agg(
+            json_build_object('id', c.id, 'name', c.name) 
+            ORDER BY c.name
+          ) FILTER (WHERE c.id IS NOT NULL), 
+          '[]'
+        ) as categories
+      FROM songs s
+      LEFT JOIN song_categories sc ON s.id = sc.song_id
+      LEFT JOIN categories c ON sc.category_id = c.id
+      WHERE s.video_id = $1
+      GROUP BY s.id
+    `, [video_id]);
+    
+    res.status(201).json(createdResult.rows[0]);
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error('Error adding song:', err);
     if (err.code === '23505') {
       res.status(409).json({ error: 'Song with this video ID already exists' });
     } else {
       res.status(500).json({ error: 'Internal server error' });
     }
+  } finally {
+    client.release();
   }
 });
 
@@ -406,17 +525,40 @@ async function checkSongsInBackground(songs) {
 // Get statistics
 app.get('/api/admin/stats', authenticateToken, async (req, res) => {
   try {
-    const stats = await pool.query(`
+    // Get overall stats
+    const overallStats = await pool.query(`
       SELECT 
         COUNT(*) as total,
         SUM(CASE WHEN status = 'working' THEN 1 ELSE 0 END) as working,
-        SUM(CASE WHEN status = 'broken' THEN 1 ELSE 0 END) as broken,
-        SUM(CASE WHEN playlist = 'modern' THEN 1 ELSE 0 END) as modern,
-        SUM(CASE WHEN playlist = 'classic' THEN 1 ELSE 0 END) as classic
+        SUM(CASE WHEN status = 'broken' THEN 1 ELSE 0 END) as broken
       FROM songs
     `);
     
-    res.json(stats.rows[0]);
+    // Get stats by category
+    const categoryStats = await pool.query(`
+      SELECT c.name, COUNT(sc.song_id) as count
+      FROM categories c
+      LEFT JOIN song_categories sc ON c.id = sc.category_id
+      GROUP BY c.id, c.name
+      ORDER BY c.name
+    `);
+    
+    const stats = {
+      total: parseInt(overallStats.rows[0].total),
+      working: parseInt(overallStats.rows[0].working),
+      broken: parseInt(overallStats.rows[0].broken),
+      byCategory: {}
+    };
+    
+    categoryStats.rows.forEach(row => {
+      stats.byCategory[row.name.toLowerCase()] = parseInt(row.count);
+    });
+    
+    // Keep modern/classic for backwards compatibility
+    stats.modern = stats.byCategory.modern || 0;
+    stats.classic = stats.byCategory.classic || 0;
+    
+    res.json(stats);
   } catch (err) {
     console.error('Error fetching stats:', err);
     res.status(500).json({ error: 'Internal server error' });
@@ -461,13 +603,140 @@ app.post('/api/admin/songs/:videoId/find-alternative', authenticateToken, async 
 // Get all broken songs
 app.get('/api/admin/songs/broken', authenticateToken, async (req, res) => {
   try {
-    const result = await pool.query(
-      'SELECT * FROM songs WHERE status = $1 ORDER BY playlist, year',
-      ['broken']
-    );
+    const result = await pool.query(`
+      SELECT s.*, 
+        COALESCE(
+          json_agg(
+            json_build_object('id', c.id, 'name', c.name) 
+            ORDER BY c.name
+          ) FILTER (WHERE c.id IS NOT NULL), 
+          '[]'
+        ) as categories
+      FROM songs s
+      LEFT JOIN song_categories sc ON s.id = sc.song_id
+      LEFT JOIN categories c ON sc.category_id = c.id
+      WHERE s.status = 'broken'
+      GROUP BY s.id
+      ORDER BY s.playlist, s.year
+    `);
     res.json(result.rows);
   } catch (err) {
     console.error('Error fetching broken songs:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ============================================
+// CATEGORY MANAGEMENT ROUTES
+// ============================================
+
+// Get all categories
+app.get('/api/admin/categories', authenticateToken, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT c.*, COUNT(sc.song_id) as song_count
+      FROM categories c
+      LEFT JOIN song_categories sc ON c.id = sc.category_id
+      GROUP BY c.id
+      ORDER BY c.name
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching categories:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Create a new category
+app.post('/api/admin/categories', authenticateToken, async (req, res) => {
+  try {
+    const { name, description } = req.body;
+    
+    if (!name) {
+      return res.status(400).json({ error: 'Category name required' });
+    }
+    
+    const result = await pool.query(
+      'INSERT INTO categories (name, description) VALUES ($1, $2) RETURNING *',
+      [name, description || null]
+    );
+    
+    // Log audit
+    await logAudit(req.user.user_id, 'create', 'category', result.rows[0].id, { name, description }, getClientIp(req));
+    
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Error creating category:', err);
+    if (err.code === '23505') {
+      res.status(409).json({ error: 'Category with this name already exists' });
+    } else {
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+});
+
+// Update a category
+app.put('/api/admin/categories/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, description } = req.body;
+    
+    if (!name) {
+      return res.status(400).json({ error: 'Category name required' });
+    }
+    
+    const result = await pool.query(
+      'UPDATE categories SET name = $1, description = $2 WHERE id = $3 RETURNING *',
+      [name, description || null, id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+    
+    // Log audit
+    await logAudit(req.user.user_id, 'update', 'category', id, { name, description }, getClientIp(req));
+    
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error updating category:', err);
+    if (err.code === '23505') {
+      res.status(409).json({ error: 'Category with this name already exists' });
+    } else {
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+});
+
+// Delete a category
+app.delete('/api/admin/categories/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Check if category has songs
+    const checkResult = await pool.query(
+      'SELECT COUNT(*) FROM song_categories WHERE category_id = $1',
+      [id]
+    );
+    
+    if (parseInt(checkResult.rows[0].count) > 0) {
+      return res.status(400).json({ 
+        error: 'Cannot delete category with associated songs. Remove songs from this category first.' 
+      });
+    }
+    
+    const result = await pool.query('DELETE FROM categories WHERE id = $1 RETURNING *', [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+    
+    // Log audit
+    await logAudit(req.user.user_id, 'delete', 'category', id, { name: result.rows[0].name }, getClientIp(req));
+    
+    res.json({ message: 'Category deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting category:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -669,15 +938,18 @@ app.get('/api/admin/audit-logs', authenticateToken, async (req, res) => {
 // Log a song play (public endpoint)
 app.post('/api/game-logs', async (req, res) => {
   try {
-    const { video_id, team_name, playlist, guessed_correctly, session_id } = req.body;
+    const { video_id, team_name, category, guessed_correctly, session_id } = req.body;
     
-    if (!video_id || !playlist) {
-      return res.status(400).json({ error: 'video_id and playlist required' });
+    if (!video_id) {
+      return res.status(400).json({ error: 'video_id required' });
     }
+    
+    // Use category if provided, otherwise fall back to 'modern' for backwards compatibility
+    const playlistValue = category || 'modern';
     
     await pool.query(
       'INSERT INTO game_logs (video_id, team_name, playlist, guessed_correctly, session_id, ip_address) VALUES ($1, $2, $3, $4, $5, $6)',
-      [video_id, team_name, playlist, guessed_correctly, session_id, getClientIp(req)]
+      [video_id, team_name, playlistValue, guessed_correctly, session_id, getClientIp(req)]
     );
     
     res.status(201).json({ message: 'Game log created' });

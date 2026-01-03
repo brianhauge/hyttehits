@@ -7,7 +7,7 @@ const gameState = {
     },
     currentSong: null,
     usedSongIds: new Set(),
-    selectedPlaylist: 'modern', // 'modern' or 'classic'
+    selectedCategory: 'Modern', // Category name (Modern, Classic, etc.)
     sessionId: null // Session ID for tracking game plays
 };
 
@@ -26,44 +26,72 @@ const API_URL = '/api';
 
 // Song cache
 let songCache = {
-    modern: [],
-    classic: []
+    categories: {} // Will store songs by category name
 };
 
 // Initialize game
 async function initGame() {
+    console.log('Initializing game...');
+    
     // Initialize session ID
     gameState.sessionId = getSessionId();
+    console.log('Session ID:', gameState.sessionId);
     
     // Load songs from API
     try {
+        console.log('Loading songs from API...');
         await loadSongs();
-        console.log(`Loaded ${songCache.modern.length} modern songs and ${songCache.classic.length} classic songs from database`);
+        const categoryCounts = Object.keys(songCache.categories).map(cat => 
+            `${cat}: ${songCache.categories[cat].length}`
+        ).join(', ');
+        console.log(`Loaded songs from database - ${categoryCounts}`);
     } catch (error) {
         console.error('Error loading songs from API:', error);
         alert('Failed to load songs. Please make sure the API server is running.');
+        return;
     }
 
     // Setup event listeners
+    console.log('Setting up event listeners...');
     document.getElementById('start-game').addEventListener('click', startGame);
     document.getElementById('continue-game').addEventListener('click', continueGame);
     document.getElementById('play-again').addEventListener('click', resetGame);
+    console.log('Game initialized successfully!');
 }
 
 // Load songs from API
 async function loadSongs() {
     try {
-        const [modernResponse, classicResponse] = await Promise.all([
-            fetch(`${API_URL}/songs?playlist=modern&status=working`),
-            fetch(`${API_URL}/songs?playlist=classic&status=working`)
-        ]);
+        // Get all categories first
+        const categoriesResponse = await fetch(`${API_URL}/songs?status=working`);
         
-        if (!modernResponse.ok || !classicResponse.ok) {
+        if (!categoriesResponse.ok) {
             throw new Error('Failed to fetch songs from API');
         }
         
-        songCache.modern = await modernResponse.json();
-        songCache.classic = await classicResponse.json();
+        const allSongs = await categoriesResponse.json();
+        
+        // Organize songs by category
+        songCache.categories = {};
+        
+        allSongs.forEach(song => {
+            if (song.categories && Array.isArray(song.categories)) {
+                song.categories.forEach(category => {
+                    if (!songCache.categories[category.name]) {
+                        songCache.categories[category.name] = [];
+                    }
+                    // Only add if not already in this category
+                    if (!songCache.categories[category.name].find(s => s.video_id === song.video_id)) {
+                        songCache.categories[category.name].push(song);
+                    }
+                });
+            }
+        });
+        
+        console.log('Loaded songs by category:', Object.keys(songCache.categories).map(cat => 
+            `${cat}: ${songCache.categories[cat].length} songs`
+        ).join(', '));
+        
     } catch (error) {
         console.error('Error loading songs:', error);
         throw error;
@@ -72,32 +100,48 @@ async function loadSongs() {
 
 // Start the game
 function startGame() {
-    const team1Name = document.getElementById('team1-name').value || 'Hold 1';
-    const team2Name = document.getElementById('team2-name').value || 'Hold 2';
-    const playlistSelect = document.getElementById('playlist-select').value;
-    
-    gameState.teams[1].name = team1Name;
-    gameState.teams[2].name = team2Name;
-    gameState.selectedPlaylist = playlistSelect;
-    
-    // Update UI
-    document.getElementById('modal-team1-name').textContent = team1Name;
-    document.getElementById('modal-team2-name').textContent = team2Name;
-    
-    // Switch to game screen
-    document.getElementById('setup-screen').classList.remove('active');
-    document.getElementById('game-screen').classList.add('active');
-    
-    // Automatically start the first song
-    playNextSong();
+    try {
+        const team1Name = document.getElementById('team1-name').value || 'Hold 1';
+        const team2Name = document.getElementById('team2-name').value || 'Hold 2';
+        const categorySelect = document.getElementById('category-select').value;
+        
+        console.log('Starting game with:', { team1Name, team2Name, categorySelect });
+        
+        gameState.teams[1].name = team1Name;
+        gameState.teams[2].name = team2Name;
+        gameState.selectedCategory = categorySelect;
+        
+        // Check if songs are loaded for this category
+        const selectedDatabase = songCache.categories[categorySelect] || [];
+        console.log(`Selected category: ${categorySelect}, Available songs: ${selectedDatabase.length}`);
+        
+        if (selectedDatabase.length === 0) {
+            alert('Ingen sange tilgængelige for den valgte kategori. Prøv at genindlæse siden.');
+            return;
+        }
+        
+        // Update UI
+        document.getElementById('modal-team1-name').textContent = team1Name;
+        document.getElementById('modal-team2-name').textContent = team2Name;
+        
+        // Switch to game screen
+        document.getElementById('setup-screen').classList.remove('active');
+        document.getElementById('game-screen').classList.add('active');
+        
+        console.log('Switched to game screen, starting first song...');
+        
+        // Automatically start the first song
+        playNextSong();
+    } catch (error) {
+        console.error('Error in startGame:', error);
+        alert('Der opstod en fejl ved start af spillet: ' + error.message);
+    }
 }
 
 // Get a random song that hasn't been used
 function getRandomSong() {
     // Select the appropriate database based on user's choice
-    const database = gameState.selectedPlaylist === 'classic' 
-        ? songCache.classic 
-        : songCache.modern;
+    const database = songCache.categories[gameState.selectedCategory] || [];
     
     const availableSongs = database.filter(song => !gameState.usedSongIds.has(song.video_id));
     if (availableSongs.length === 0) {
@@ -110,34 +154,46 @@ function getRandomSong() {
 
 // Play next song
 async function playNextSong() {
-    const song = getRandomSong();
-    gameState.currentSong = song;
-    gameState.usedSongIds.add(song.video_id);
-    
-    // Update team indicator
-    const currentTeam = gameState.currentTeam;
-    const teamName = gameState.teams[currentTeam].name;
-    const teamIndicator = document.getElementById('current-team-indicator');
-    const modalTeamName = document.getElementById('modal-team-name');
-    
-    modalTeamName.textContent = teamName;
-    teamIndicator.className = 'current-team-indicator team' + currentTeam;
-    
-    // Show guess options BEFORE loading video
-    showGuessOptions();
-    
-    // Play on YouTube
     try {
-        await window.youtubeAPI.playVideo(song.video_id);
+        console.log('playNextSong called');
+        const song = getRandomSong();
+        console.log('Selected song:', song);
+        
+        gameState.currentSong = song;
+        gameState.usedSongIds.add(song.video_id);
+        
+        // Update team indicator
+        const currentTeam = gameState.currentTeam;
+        const teamName = gameState.teams[currentTeam].name;
+        const teamIndicator = document.getElementById('current-team-indicator');
+        const modalTeamName = document.getElementById('modal-team-name');
+        
+        modalTeamName.textContent = teamName;
+        teamIndicator.className = 'current-team-indicator team' + currentTeam;
+        
+        // Show guess options BEFORE loading video
+        console.log('Showing guess options...');
+        showGuessOptions();
+        
+        // Play on YouTube
+        console.log('Attempting to play video:', song.video_id);
+        try {
+            await window.youtubeAPI.playVideo(song.video_id);
+            console.log('Video playing successfully');
+        } catch (error) {
+            console.error('Error playing video:', error);
+            // Mark song as broken in database
+            await markSongAsBroken(song.video_id);
+            // Try next song
+            alert('Video kunne ikke afspilles. Prøver næste sang...');
+            setTimeout(() => {
+                playNextSong();
+            }, 1000);
+            return;
+        }
     } catch (error) {
-        console.error('Error playing video:', error);
-        // Mark song as broken in database
-        await markSongAsBroken(song.video_id);
-        // Try next song
-        setTimeout(() => {
-            playNextSong();
-        }, 1000);
-        return;
+        console.error('Error in playNextSong:', error);
+        alert('Der opstod en fejl: ' + error.message);
     }
 }
 
@@ -157,7 +213,7 @@ async function markSongAsBroken(videoId) {
 }
 
 // Log game play to database
-async function logGamePlay(videoId, teamName, playlist, guessedCorrectly) {
+async function logGamePlay(videoId, teamName, category, guessedCorrectly) {
     try {
         await fetch(`${API_URL}/game-logs`, {
             method: 'POST',
@@ -167,7 +223,7 @@ async function logGamePlay(videoId, teamName, playlist, guessedCorrectly) {
             body: JSON.stringify({
                 video_id: videoId,
                 team_name: teamName,
-                playlist: playlist,
+                category: category,
                 guessed_correctly: guessedCorrectly,
                 session_id: gameState.sessionId
             })
@@ -175,7 +231,6 @@ async function logGamePlay(videoId, teamName, playlist, guessedCorrectly) {
     } catch (error) {
         console.error('Error logging game play:', error);
     }
-}
 }
 
 // Show guess options based on current timeline
@@ -271,9 +326,8 @@ function makeGuess(position) {
     window.youtubeAPI.stopVideo();
     
     // Log the game play
-    const currentTeam = gameState.currentTeam;
     const teamName = gameState.teams[currentTeam].name;
-    logGamePlay(song.video_id, teamName, gameState.selectedPlaylist, isCorrect);
+    logGamePlay(song.video_id, teamName, gameState.selectedCategory, isCorrect);
     
     // Show result
     showResult(isCorrect, position);

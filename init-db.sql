@@ -91,3 +91,29 @@ CREATE INDEX idx_game_logs_video_id ON game_logs(video_id);
 CREATE INDEX idx_game_logs_playlist ON game_logs(playlist);
 CREATE INDEX idx_game_logs_created_at ON game_logs(created_at);
 CREATE INDEX idx_game_logs_session_id ON game_logs(session_id);
+
+-- Create categories table
+CREATE TABLE IF NOT EXISTS categories (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create song_categories junction table (many-to-many relationship)
+CREATE TABLE IF NOT EXISTS song_categories (
+    song_id INTEGER NOT NULL REFERENCES songs(id) ON DELETE CASCADE,
+    category_id INTEGER NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (song_id, category_id)
+);
+
+-- Create indexes for song_categories
+CREATE INDEX idx_song_categories_song_id ON song_categories(song_id);
+CREATE INDEX idx_song_categories_category_id ON song_categories(category_id);
+
+-- Insert default categories (migrating from playlist field)
+INSERT INTO categories (name, description) VALUES
+    ('Modern', 'Modern songs (2016-2025)'),
+    ('Classic', 'Classic songs (1952-2025)')
+ON CONFLICT (name) DO NOTHING;

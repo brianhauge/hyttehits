@@ -39,6 +39,7 @@
         <nav class="tabs">
             <button class="tab-btn active" data-tab="songs">All Songs</button>
             <button class="tab-btn" data-tab="add">Add Song</button>
+            <button class="tab-btn" data-tab="categories">Categories</button>
             <button class="tab-btn" data-tab="broken">Broken Songs</button>
             <button class="tab-btn" data-tab="users">Users</button>
             <button class="tab-btn" data-tab="audit">Audit Logs</button>
@@ -102,12 +103,14 @@
                         <input type="text" id="addArtist" name="artist" required>
                     </div>
                     <div class="form-group">
-                        <label for="addCategory">Category *</label>
-                        <select id="addCategory" name="category" required>
-                            <option value="">Select category</option>
-                            <option value="Modern">Modern (2016-2025)</option>
-                            <option value="Classic">Classic (1952-2025)</option>
-                        </select>
+                        <label for="addYear">Year *</label>
+                        <input type="number" id="addYear" name="year" required min="1900" max="2100">
+                    </div>
+                    <div class="form-group">
+                        <label>Categories * (select at least one)</label>
+                        <div id="addCategoriesCheckboxes" style="margin-top: 10px;">
+                            <!-- Checkboxes will be dynamically loaded -->
+                        </div>
                     </div>
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary">Add Song</button>
@@ -115,6 +118,31 @@
                     </div>
                     <div id="addSongMessage" class="message"></div>
                 </form>
+            </div>
+
+            <!-- Categories Tab -->
+            <div id="categoriesTab" class="tab-content">
+                <div class="tab-header">
+                    <h2>Categories Management</h2>
+                    <button id="addCategoryBtn" class="btn btn-primary">Add Category</button>
+                </div>
+                <div class="table-container">
+                    <table id="categoriesTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Description</th>
+                                <th>Songs</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="categoriesTableBody">
+                            <tr><td colspan="6" class="loading">Loading categories...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <!-- Broken Songs Tab -->
@@ -365,6 +393,7 @@
             </div>
             <form id="editSongForm" class="song-form">
                 <input type="hidden" id="editOriginalVideoId">
+                <input type="hidden" id="editSongId">
                 <div class="form-group">
                     <label for="editVideoId">YouTube Video ID *</label>
                     <input type="text" id="editVideoId" name="video_id" required>
@@ -378,11 +407,14 @@
                     <input type="text" id="editArtist" name="artist" required>
                 </div>
                 <div class="form-group">
-                    <label for="editCategory">Category *</label>
-                    <select id="editCategory" name="category" required>
-                        <option value="Modern">Modern (2016-2025)</option>
-                        <option value="Classic">Classic (1952-2025)</option>
-                    </select>
+                    <label for="editYear">Year *</label>
+                    <input type="number" id="editYear" name="year" required min="1900" max="2100">
+                </div>
+                <div class="form-group">
+                    <label>Categories *</label>
+                    <div id="editCategoriesCheckboxes" style="margin-top: 10px;">
+                        <!-- Checkboxes will be dynamically loaded -->
+                    </div>
                 </div>
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary">Save Changes</button>
@@ -422,6 +454,32 @@
                     <button type="button" class="btn btn-secondary modal-close">Cancel</button>
                 </div>
                 <div id="userMessage" class="message"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add/Edit Category Modal -->
+    <div id="categoryModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="categoryModalTitle">Add Category</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form id="categoryForm" class="song-form">
+                <input type="hidden" id="categoryId">
+                <div class="form-group">
+                    <label for="categoryName">Name *</label>
+                    <input type="text" id="categoryName" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="categoryDescription">Description</label>
+                    <textarea id="categoryDescription" name="description" rows="3"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Save</button>
+                    <button type="button" class="btn btn-secondary modal-close">Cancel</button>
+                </div>
+                <div id="categoryMessage" class="message"></div>
             </form>
         </div>
     </div>
