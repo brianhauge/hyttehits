@@ -13,7 +13,7 @@ async function populateDatabase() {
     console.log('Starting database population...');
     
     // Read the SQL file
-    const sqlFilePath = path.join(__dirname, '..', 'songs-data.sql');
+    const sqlFilePath = path.join(__dirname, 'songs-data.sql');
     const sql = fs.readFileSync(sqlFilePath, 'utf8');
     
     // Execute the SQL

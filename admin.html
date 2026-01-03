@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hytte Hits Admin</title>
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="screen">
+        <div class="login-container">
+            <h1>Hytte Hits Admin</h1>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required autofocus>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Login</button>
+                <div id="loginError" class="error-message"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div id="adminScreen" class="screen hidden">
+        <header>
+            <h1>Hytte Hits Admin</h1>
+            <div class="header-actions">
+                <span id="welcomeMessage"></span>
+                <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+            </div>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-btn active" data-tab="songs">All Songs</button>
+            <button class="tab-btn" data-tab="add">Add Song</button>
+            <button class="tab-btn" data-tab="broken">Broken Songs</button>
+            <button class="tab-btn" data-tab="stats">Statistics</button>
+        </nav>
+
+        <main>
+            <!-- All Songs Tab -->
+            <div id="songsTab" class="tab-content active">
+                <div class="tab-header">
+                    <h2>All Songs</h2>
+                    <div class="actions">
+                        <button id="checkAllBtn" class="btn btn-primary">Check All Songs</button>
+                        <input type="search" id="searchInput" placeholder="Search songs...">
+                    </div>
+                </div>
+                <div id="checkProgress" class="progress-container hidden">
+                    <div class="progress-bar">
+                        <div id="progressBar" class="progress-fill"></div>
+                    </div>
+                    <span id="progressText">Checking songs...</span>
+                </div>
+                <div class="table-container">
+                    <table id="songsTable">
+                        <thead>
+                            <tr>
+                                <th>Video ID</th>
+                                <th>Title</th>
+                                <th>Artist</th>
+                                <th>Category</th>
+                                <th>Status</th>
+                                <th>Last Checked</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="songsTableBody">
+                            <tr><td colspan="7" class="loading">Loading songs...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Add Song Tab -->
+            <div id="addTab" class="tab-content">
+                <div class="tab-header">
+                    <h2>Add New Song</h2>
+                </div>
+                <form id="addSongForm" class="song-form">
+                    <div class="form-group">
+                        <label for="addVideoId">YouTube Video ID *</label>
+                        <input type="text" id="addVideoId" name="video_id" required placeholder="e.g., dQw4w9WgXcQ">
+                        <small>Enter the YouTube video ID (the part after "v=" in the URL)</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="addTitle">Title *</label>
+                        <input type="text" id="addTitle" name="title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="addArtist">Artist *</label>
+                        <input type="text" id="addArtist" name="artist" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="addCategory">Category *</label>
+                        <select id="addCategory" name="category" required>
+                            <option value="">Select category</option>
+                            <option value="Modern">Modern (2016-2025)</option>
+                            <option value="Classic">Classic (1952-2025)</option>
+                        </select>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Add Song</button>
+                        <button type="reset" class="btn btn-secondary">Clear</button>
+                    </div>
+                    <div id="addSongMessage" class="message"></div>
+                </form>
+            </div>
+
+            <!-- Broken Songs Tab -->
+            <div id="brokenTab" class="tab-content">
+                <div class="tab-header">
+                    <h2>Broken Songs</h2>
+                    <button id="refreshBrokenBtn" class="btn btn-secondary">Refresh</button>
+                </div>
+                <div class="table-container">
+                    <table id="brokenSongsTable">
+                        <thead>
+                            <tr>
+                                <th>Video ID</th>
+                                <th>Title</th>
+                                <th>Artist</th>
+                                <th>Category</th>
+                                <th>Last Checked</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="brokenSongsTableBody">
+                            <tr><td colspan="6" class="loading">Loading broken songs...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Statistics Tab -->
+            <div id="statsTab" class="tab-content">
+                <div class="tab-header">
+                    <h2>Database Statistics</h2>
+                    <button id="refreshStatsBtn" class="btn btn-secondary">Refresh</button>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>Total Songs</h3>
+                        <div class="stat-value" id="statTotal">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Modern Songs</h3>
+                        <div class="stat-value" id="statModern">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Classic Songs</h3>
+                        <div class="stat-value" id="statClassic">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Working Songs</h3>
+                        <div class="stat-value" id="statWorking">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Broken Songs</h3>
+                        <div class="stat-value" id="statBroken">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Unchecked Songs</h3>
+                        <div class="stat-value" id="statUnchecked">-</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Edit Song Modal -->
+    <div id="editModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Song</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form id="editSongForm" class="song-form">
+                <input type="hidden" id="editOriginalVideoId">
+                <div class="form-group">
+                    <label for="editVideoId">YouTube Video ID *</label>
+                    <input type="text" id="editVideoId" name="video_id" required>
+                </div>
+                <div class="form-group">
+                    <label for="editTitle">Title *</label>
+                    <input type="text" id="editTitle" name="title" required>
+                </div>
+                <div class="form-group">
+                    <label for="editArtist">Artist *</label>
+                    <input type="text" id="editArtist" name="artist" required>
+                </div>
+                <div class="form-group">
+                    <label for="editCategory">Category *</label>
+                    <select id="editCategory" name="category" required>
+                        <option value="Modern">Modern (2016-2025)</option>
+                        <option value="Classic">Classic (1952-2025)</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                    <button type="button" class="btn btn-secondary modal-close">Cancel</button>
+                </div>
+                <div id="editSongMessage" class="message"></div>
+            </form>
+        </div>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html>

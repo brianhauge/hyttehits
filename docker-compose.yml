@@ -41,6 +41,9 @@ services:
       - ./styles.css:/usr/share/nginx/hyttehits/styles.css
       - ./game.js:/usr/share/nginx/hyttehits/game.js
       - ./youtube.js:/usr/share/nginx/hyttehits/youtube.js
+      - ./admin.html:/usr/share/nginx/hyttehits/admin.html
+      - ./admin.css:/usr/share/nginx/hyttehits/admin.css
+      - ./admin.js:/usr/share/nginx/hyttehits/admin.js
     container_name: hyttehits
     depends_on:
       - api
