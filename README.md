@@ -5,58 +5,73 @@ A web-based implementation of the Hytte Hits music party game with YouTube integ
 ## Features
 
 - Two-team gameplay
-- YouTube integration for playing real music from 2016-2025
-- Pre-loaded database of 80+ popular songs
+- YouTube integration for playing real music
+- PostgreSQL database with 150+ songs from modern (2016-2025) and classic (1950s-2015) playlists
+- Automatic song status tracking (working/broken)
 - Interactive timeline showing guessed years in ascending order
 - Guess if a song was released before, between, or after existing years
 - Score tracking and winner declaration
 - Responsive design
-- **No API keys required!**
+- RESTful API for song management
+
+## Architecture
+
+- **Frontend**: HTML5, CSS3, JavaScript (Nginx)
+- **Backend**: Node.js with Express
+- **Database**: PostgreSQL 16
+- **Deployment**: Docker Compose
 
 ## Setup Instructions
 
+### Prerequisites
+
+- Docker and Docker Compose installed
+- Port 8081 (web), 3000 (API), and 5432 (PostgreSQL) available
+
 ### Quick Start
 
-1. **Download/Clone the project**
-   - Download all files to a folder
-
-2. **Run a local web server**
-   
-   Choose one of these methods:
-
-   #### Option A: Python (if installed)
+1. **Clone the repository**
    ```bash
-   # Python 3
-   python -m http.server 8080
-
-   # Python 2
-   python -m SimpleHTTPServer 8080
+   cd hyttehits
    ```
 
-   #### Option B: Node.js (if installed)
+2. **Start all services with Docker Compose**
    ```bash
-   # Install http-server globally
-   npm install -g http-server
-
-   # Run the server
-   http-server -p 8080
+   docker-compose up -d
    ```
 
-   #### Option C: VS Code Live Server
-   1. Install the "Live Server" extension in VS Code
-   2. Right-click `index.html`
-   3. Select "Open with Live Server"
+   This will:
+   - Start PostgreSQL database
+   - Initialize the database schema
+   - Start the Node.js API server
+   - Start the Nginx web server
 
-3. **Play the game**
-   - Open your browser and go to `http://localhost:8080`
+3. **Populate the database with songs**
+   ```bash
+   docker exec -it hyttehits-api node populate-db.js
+   ```
+
+4. **Play the game**
+   - Open your browser and go to `http://localhost:8081`
    - Enter team names
+   - Select playlist (Modern or Classic)
    - Click "Start Game"
    - Enjoy!
 
+### Development Setup
+
+To run the API server locally for development:
+
+```bash
+cd api
+npm install
+DATABASE_URL=postgresql://hyttehits:hyttehits123@localhost:5432/hyttehits npm start
+```
+
 ## How to Play
 
-1. **Setup**: Two teams enter their names
-2. **Play a Song**: The current team clicks "Play Song" to hear a random track from 2016-2025
+1. **Setup**: Two teams enter their names and select a playlist
+2. **Play a Song**: The current team hears a random track from the selected playlist
 3. **Make a Guess**: The team guesses where the song belongs in their timeline:
    - Before all existing years
    - Between two years
@@ -67,82 +82,127 @@ A web-based implementation of the Hytte Hits music party game with YouTube integ
 5. **Switch Teams**: Play alternates between teams
 6. **Win**: First team to correctly place 10 songs in chronological order wins!
 
-## Game Rules
+## Database Schema
 
-- Songs are from 2016-2025 only
-- Teams must place songs in the correct chronological position
-- The timeline shows all correctly guessed songs in ascending order
-- First team to reach 10 points becomes the Hytte Hits champion!
+### Songs Table
 
-## Song Database
+| Column       | Type      | Description                           |
+|--------------|-----------|---------------------------------------|
+| id           | SERIAL    | Primary key                           |
+| title        | VARCHAR   | Song title                            |
+| artist       | VARCHAR   | Artist name                           |
+| year         | INTEGER   | Release year                          |
+| video_id     | VARCHAR   | YouTube video ID (unique)             |
+| playlist     | VARCHAR   | Playlist type (modern/classic)        |
+| status       | VARCHAR   | Song status (working/broken)          |
+| last_checked | TIMESTAMP | Last time status was checked          |
+| created_at   | TIMESTAMP | Record creation time                  |
+| updated_at   | TIMESTAMP | Last update time                      |
 
-The game includes 80+ popular songs from each year between 2016-2025, including hits from:
-- The Weeknd (Blinding Lights, Save Your Tears)
-- Taylor Swift (Anti-Hero, Cruel Summer)
-- Drake (God's Plan, One Dance)
-- Olivia Rodrigo (Drivers License, Good 4 U)
-- Harry Styles (As It Was, Watermelon Sugar)
-- And many more!
+## API Endpoints
+
+### Get All Songs
+```
+GET /api/songs?playlist={modern|classic}&status={working|broken}
+```
+
+### Get Random Song
+```
+GET /api/songs/random?playlist={modern|classic}&exclude={videoId1,videoId2}
+```
+
+### Get Song by Video ID
+```
+GET /api/songs/:videoId
+```
+
+### Update Song Status
+```
+PATCH /api/songs/:videoId/status
+Body: { "status": "working" | "broken" }
+```
+
+### Add New Song
+```
+POST /api/songs
+Body: {
+  "title": "Song Title",
+  "artist": "Artist Name",
+  "year": 2024,
+  "video_id": "YouTube_Video_ID",
+  "playlist": "modern",
+  "status": "working"
+}
+```
+
+### Delete Song
+```
+DELETE /api/songs/:videoId
+```
+
+## Automatic Song Status Management
+
+The application automatically tracks song availability:
+- When a YouTube video fails to load, the song is marked as "broken" in the database
+- Only "working" songs are returned in random song queries
+- This ensures a smooth gameplay experience without broken videos
+
+## Playlists
+
+### Modern Playlist (2016-2025)
+150+ popular songs from recent years including hits from:
+- The Weeknd, Taylor Swift, Drake, Olivia Rodrigo, Harry Styles, and many more!
+
+### Classic Playlist (1950s-2015)
+Iconic songs spanning 60+ years of music history including:
+- The Beatles, Queen, Michael Jackson, Madonna, and more!
+
+## File Structure
+
+```
+hyttehits/
+├── api/
+│   ├── package.json       # API dependencies
+│   ├── server.js          # Express API server
+│   └── populate-db.js     # Database population script
+├── docker-compose.yml     # Docker services configuration
+├── Dockerfile             # Web server container
+├── Dockerfile.api         # API server container
+├── init-db.sql           # Database schema
+├── index.html            # Main HTML structure
+├── styles.css            # Styling and layout
+├── game.js               # Game logic and API integration
+├── youtube.js            # YouTube API integration
+├── nginx.conf            # Nginx configuration with API proxy
+└── README.md             # This file
+```
+
+## Troubleshooting
+
+### Videos won't play
+- Check that the API server is running: `docker ps`
+- The application will automatically mark broken videos and skip to the next song
+
+### Database connection errors
+- Ensure PostgreSQL container is healthy: `docker-compose ps`
+- Check database logs: `docker logs hyttehits-db`
+
+### API not responding
+- Check API logs: `docker logs hyttehits-api`
+- Verify API is accessible: `curl http://localhost:3000/health`
+
+### Rebuild containers
+```bash
+docker-compose down
+docker-compose up -d --build
+```
 
 ## Requirements
 
 - Modern web browser (Chrome, Firefox, Safari, Edge)
   - **Recommended: [Brave Browser](https://brave.com/)** - Blocks YouTube ads for uninterrupted gameplay
 - Internet connection (for YouTube videos)
-- Local web server (see setup instructions)
-
-## Troubleshooting
-
-### Videos won't play
-- Check your internet connection
-- Make sure you're running a local web server (not just opening the HTML file)
-- Some videos may be region-restricted
-
-### Game not loading
-- Verify you're accessing via `http://localhost:8080` (or your server's port)
-- Check browser console for errors (F12 → Console tab)
-- Make sure all files are in the same directory
-
-### YouTube player not appearing
-- The player is hidden by default (set to 0x0 size)
-- You'll hear the music playing even if you don't see the video
-- This is intentional to keep the focus on the game
-
-## Technical Details
-
-- **Frontend**: HTML5, CSS3, JavaScript (ES6+)
-- **API**: YouTube IFrame Player API
-- **No backend required**
-- **No build process needed**
-
-## File Structure
-
-```
-hyttehits/
-├── index.html      # Main HTML structure
-├── styles.css      # Styling and layout
-├── game.js         # Game logic and state management
-├── youtube.js      # YouTube API integration & song database
-└── README.md       # This file
-```
-
-## Adding More Songs
-
-To add more songs to the database, edit `youtube.js` and add entries to the `songDatabase` array:
-
-```javascript
-{ 
-    title: "Song Title", 
-    artist: "Artist Name", 
-    year: 2024, 
-    videoId: "YouTube_Video_ID" 
-}
-```
-
-To find a YouTube video ID:
-1. Go to the video on YouTube
-2. Look at the URL: `https://www.youtube.com/watch?v=VIDEO_ID_HERE`
-3. Copy the part after `v=`
+- Docker and Docker Compose
 
 ## License
 
@@ -152,3 +212,4 @@ This is a custom implementation of a music party game.
 
 - Web implementation created for entertainment purposes
 - Music provided by YouTube
+

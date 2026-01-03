@@ -10,14 +10,50 @@ const gameState = {
     selectedPlaylist: 'modern' // 'modern' or 'classic'
 };
 
+// API Configuration
+const API_URL = '/api';
+
+// Song cache
+let songCache = {
+    modern: [],
+    classic: []
+};
+
 // Initialize game
-function initGame() {
-    console.log(`Loaded ${window.youtubeAPI.songDatabase.length} modern songs and ${window.youtubeAPI.classicSongDatabase.length} classic songs from YouTube`);
+async function initGame() {
+    // Load songs from API
+    try {
+        await loadSongs();
+        console.log(`Loaded ${songCache.modern.length} modern songs and ${songCache.classic.length} classic songs from database`);
+    } catch (error) {
+        console.error('Error loading songs from API:', error);
+        alert('Failed to load songs. Please make sure the API server is running.');
+    }
 
     // Setup event listeners
     document.getElementById('start-game').addEventListener('click', startGame);
     document.getElementById('continue-game').addEventListener('click', continueGame);
     document.getElementById('play-again').addEventListener('click', resetGame);
+}
+
+// Load songs from API
+async function loadSongs() {
+    try {
+        const [modernResponse, classicResponse] = await Promise.all([
+            fetch(`${API_URL}/songs?playlist=modern&status=working`),
+            fetch(`${API_URL}/songs?playlist=classic&status=working`)
+        ]);
+        
+        if (!modernResponse.ok || !classicResponse.ok) {
+            throw new Error('Failed to fetch songs from API');
+        }
+        
+        songCache.modern = await modernResponse.json();
+        songCache.classic = await classicResponse.json();
+    } catch (error) {
+        console.error('Error loading songs:', error);
+        throw error;
+    }
 }
 
 // Start the game
@@ -46,10 +82,10 @@ function startGame() {
 function getRandomSong() {
     // Select the appropriate database based on user's choice
     const database = gameState.selectedPlaylist === 'classic' 
-        ? window.youtubeAPI.classicSongDatabase 
-        : window.youtubeAPI.songDatabase;
+        ? songCache.classic 
+        : songCache.modern;
     
-    const availableSongs = database.filter(song => !gameState.usedSongIds.has(song.videoId));
+    const availableSongs = database.filter(song => !gameState.usedSongIds.has(song.video_id));
     if (availableSongs.length === 0) {
         alert('Ingen flere sange tilgængelige! Spillet nulstiller sangpuljen.');
         gameState.usedSongIds.clear();
@@ -62,7 +98,7 @@ function getRandomSong() {
 async function playNextSong() {
     const song = getRandomSong();
     gameState.currentSong = song;
-    gameState.usedSongIds.add(song.videoId);
+    gameState.usedSongIds.add(song.video_id);
     
     // Update team indicator
     const currentTeam = gameState.currentTeam;
@@ -78,14 +114,35 @@ async function playNextSong() {
     
     // Play on YouTube
     try {
-        await window.youtubeAPI.playVideo(song.videoId);
+        await window.youtubeAPI.playVideo(song.video_id);
     } catch (error) {
         console.error('Error playing video:', error);
+        // Mark song as broken in database
+        await markSongAsBroken(song.video_id);
         // Try next song
         setTimeout(() => {
             playNextSong();
         }, 1000);
         return;
+    }
+}
+
+// Mark a song as broken in the database
+async function markSongAsBroken(videoId) {
+    try {
+        await fetch(`${API_URL}/songs/${videoId}/status`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: 'broken' })
+        });
+        console.log(`Marked song ${videoId} as broken`);
+        
+        // Reload songs to update cache
+        await loadSongs();
+    } catch (error) {
+        console.error('Error marking song as broken:', error);
     }
 }
 

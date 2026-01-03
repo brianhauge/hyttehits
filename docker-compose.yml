@@ -1,4 +1,37 @@
 services:
+  db:
+    image: postgres:16-alpine
+    container_name: hyttehits-db
+    environment:
+      POSTGRES_DB: hyttehits
+      POSTGRES_USER: hyttehits
+      POSTGRES_PASSWORD: hyttehits123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hyttehits"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: hyttehits-api
+    environment:
+      DATABASE_URL: postgresql://hyttehits:hyttehits123@db:5432/hyttehits
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
   web:
     build: .
     ports:
@@ -9,4 +42,9 @@ services:
       - ./game.js:/usr/share/nginx/hyttehits/game.js
       - ./youtube.js:/usr/share/nginx/hyttehits/youtube.js
     container_name: hyttehits
+    depends_on:
+      - api
     restart: unless-stopped
+
+volumes:
+  postgres_data:
