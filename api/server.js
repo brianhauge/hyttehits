@@ -52,6 +52,26 @@ async function authenticateToken(req, res, next) {
   }
 }
 
+// Audit logging helper function
+async function logAudit(userId, action, resourceType, resourceId, details, ipAddress) {
+  try {
+    await pool.query(
+      'INSERT INTO audit_logs (user_id, action, resource_type, resource_id, details, ip_address) VALUES ($1, $2, $3, $4, $5, $6)',
+      [userId, action, resourceType, resourceId, JSON.stringify(details), ipAddress]
+    );
+  } catch (err) {
+    console.error('Error logging audit:', err);
+  }
+}
+
+// Get client IP address
+function getClientIp(req) {
+  return req.headers['x-forwarded-for']?.split(',')[0] || 
+         req.headers['x-real-ip'] || 
+         req.connection.remoteAddress || 
+         req.socket.remoteAddress;
+}
+
 // ============================================
 // AUTHENTICATION ROUTES
 // ============================================
@@ -98,6 +118,9 @@ app.post('/api/auth/login', async (req, res) => {
       [user.id]
     );
     
+    // Log audit
+    await logAudit(user.id, 'login', 'auth', user.id, { username: user.username }, getClientIp(req));
+    
     res.json({
       token,
       user: {
@@ -116,6 +139,10 @@ app.post('/api/auth/login', async (req, res) => {
 app.post('/api/auth/logout', authenticateToken, async (req, res) => {
   try {
     const token = req.headers['authorization']?.split(' ')[1];
+    
+    // Log audit before deleting session
+    await logAudit(req.user.user_id, 'logout', 'auth', req.user.user_id, { username: req.user.username }, getClientIp(req));
+    
     await pool.query('DELETE FROM sessions WHERE token = $1', [token]);
     res.json({ message: 'Logged out successfully' });
   } catch (err) {
@@ -262,6 +289,9 @@ app.put('/api/admin/songs/:videoId', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Song not found' });
     }
     
+    // Log audit
+    await logAudit(req.user.user_id, 'update', 'song', video_id, { oldVideoId: videoId, newData: req.body }, getClientIp(req));
+    
     res.json(result.rows[0]);
   } catch (err) {
     console.error('Error updating song:', err);
@@ -287,6 +317,9 @@ app.post('/api/admin/songs', authenticateToken, async (req, res) => {
       [title, artist, year, video_id, playlist, status || 'working']
     );
     
+    // Log audit
+    await logAudit(req.user.user_id, 'create', 'song', video_id, { title, artist, year, playlist }, getClientIp(req));
+    
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error('Error adding song:', err);
@@ -307,6 +340,9 @@ app.delete('/api/admin/songs/:videoId', authenticateToken, async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Song not found' });
     }
+    
+    // Log audit
+    await logAudit(req.user.user_id, 'delete', 'song', videoId, { song: result.rows[0] }, getClientIp(req));
     
     res.json({ message: 'Song deleted successfully' });
   } catch (err) {
@@ -432,6 +468,343 @@ app.get('/api/admin/songs/broken', authenticateToken, async (req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error('Error fetching broken songs:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ============================================
+// USER ADMINISTRATION ROUTES
+// ============================================
+
+// Get all users
+app.get('/api/admin/users', authenticateToken, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT id, username, role, created_at, last_login FROM users ORDER BY created_at DESC'
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching users:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Create a new user
+app.post('/api/admin/users', authenticateToken, async (req, res) => {
+  try {
+    const { username, password, role } = req.body;
+    
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Username and password required' });
+    }
+    
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters long' });
+    }
+    
+    // Hash password
+    const passwordHash = await bcrypt.hash(password, 10);
+    
+    const result = await pool.query(
+      'INSERT INTO users (username, password_hash, role) VALUES ($1, $2, $3) RETURNING id, username, role, created_at',
+      [username, passwordHash, role || 'admin']
+    );
+    
+    // Log audit
+    await logAudit(req.user.user_id, 'create', 'user', result.rows[0].id, { username, role: role || 'admin' }, getClientIp(req));
+    
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Error creating user:', err);
+    if (err.code === '23505') {
+      res.status(409).json({ error: 'Username already exists' });
+    } else {
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+});
+
+// Update user
+app.put('/api/admin/users/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { username, password, role } = req.body;
+    
+    let query = 'UPDATE users SET username = $1, role = $2';
+    let params = [username, role || 'admin'];
+    
+    // If password is provided, hash it
+    if (password) {
+      if (password.length < 8) {
+        return res.status(400).json({ error: 'Password must be at least 8 characters long' });
+      }
+      const passwordHash = await bcrypt.hash(password, 10);
+      query += ', password_hash = $3 WHERE id = $4 RETURNING id, username, role, created_at, last_login';
+      params.push(passwordHash, id);
+    } else {
+      query += ' WHERE id = $3 RETURNING id, username, role, created_at, last_login';
+      params.push(id);
+    }
+    
+    const result = await pool.query(query, params);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    // Log audit
+    await logAudit(req.user.user_id, 'update', 'user', id, { username, role, passwordChanged: !!password }, getClientIp(req));
+    
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error updating user:', err);
+    if (err.code === '23505') {
+      res.status(409).json({ error: 'Username already exists' });
+    } else {
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+});
+
+// Delete user
+app.delete('/api/admin/users/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Prevent deleting self
+    if (parseInt(id) === req.user.user_id) {
+      return res.status(400).json({ error: 'Cannot delete your own account' });
+    }
+    
+    const result = await pool.query('DELETE FROM users WHERE id = $1 RETURNING username', [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    // Log audit
+    await logAudit(req.user.user_id, 'delete', 'user', id, { username: result.rows[0].username }, getClientIp(req));
+    
+    res.json({ message: 'User deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting user:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ============================================
+// AUDIT LOG ROUTES
+// ============================================
+
+// Get audit logs
+app.get('/api/admin/audit-logs', authenticateToken, async (req, res) => {
+  try {
+    const { limit = 100, offset = 0, user_id, action, resource_type } = req.query;
+    
+    let query = `
+      SELECT al.*, u.username 
+      FROM audit_logs al 
+      JOIN users u ON al.user_id = u.id 
+      WHERE 1=1
+    `;
+    const params = [];
+    
+    if (user_id) {
+      params.push(user_id);
+      query += ` AND al.user_id = $${params.length}`;
+    }
+    
+    if (action) {
+      params.push(action);
+      query += ` AND al.action = $${params.length}`;
+    }
+    
+    if (resource_type) {
+      params.push(resource_type);
+      query += ` AND al.resource_type = $${params.length}`;
+    }
+    
+    query += ` ORDER BY al.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+    params.push(parseInt(limit), parseInt(offset));
+    
+    const result = await pool.query(query, params);
+    
+    // Get total count
+    let countQuery = 'SELECT COUNT(*) FROM audit_logs WHERE 1=1';
+    const countParams = [];
+    
+    if (user_id) {
+      countParams.push(user_id);
+      countQuery += ` AND user_id = $${countParams.length}`;
+    }
+    
+    if (action) {
+      countParams.push(action);
+      countQuery += ` AND action = $${countParams.length}`;
+    }
+    
+    if (resource_type) {
+      countParams.push(resource_type);
+      countQuery += ` AND resource_type = $${countParams.length}`;
+    }
+    
+    const countResult = await pool.query(countQuery, countParams);
+    
+    res.json({
+      logs: result.rows,
+      total: parseInt(countResult.rows[0].count),
+      limit: parseInt(limit),
+      offset: parseInt(offset)
+    });
+  } catch (err) {
+    console.error('Error fetching audit logs:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ============================================
+// GAME LOG ROUTES
+// ============================================
+
+// Log a song play (public endpoint)
+app.post('/api/game-logs', async (req, res) => {
+  try {
+    const { video_id, team_name, playlist, guessed_correctly, session_id } = req.body;
+    
+    if (!video_id || !playlist) {
+      return res.status(400).json({ error: 'video_id and playlist required' });
+    }
+    
+    await pool.query(
+      'INSERT INTO game_logs (video_id, team_name, playlist, guessed_correctly, session_id, ip_address) VALUES ($1, $2, $3, $4, $5, $6)',
+      [video_id, team_name, playlist, guessed_correctly, session_id, getClientIp(req)]
+    );
+    
+    res.status(201).json({ message: 'Game log created' });
+  } catch (err) {
+    console.error('Error creating game log:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get game logs (admin only)
+app.get('/api/admin/game-logs', authenticateToken, async (req, res) => {
+  try {
+    const { limit = 100, offset = 0, video_id, playlist, session_id } = req.query;
+    
+    let query = `
+      SELECT gl.*, s.title, s.artist, s.year 
+      FROM game_logs gl 
+      JOIN songs s ON gl.video_id = s.video_id 
+      WHERE 1=1
+    `;
+    const params = [];
+    
+    if (video_id) {
+      params.push(video_id);
+      query += ` AND gl.video_id = $${params.length}`;
+    }
+    
+    if (playlist) {
+      params.push(playlist);
+      query += ` AND gl.playlist = $${params.length}`;
+    }
+    
+    if (session_id) {
+      params.push(session_id);
+      query += ` AND gl.session_id = $${params.length}`;
+    }
+    
+    query += ` ORDER BY gl.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+    params.push(parseInt(limit), parseInt(offset));
+    
+    const result = await pool.query(query, params);
+    
+    // Get total count
+    let countQuery = 'SELECT COUNT(*) FROM game_logs WHERE 1=1';
+    const countParams = [];
+    
+    if (video_id) {
+      countParams.push(video_id);
+      countQuery += ` AND video_id = $${countParams.length}`;
+    }
+    
+    if (playlist) {
+      countParams.push(playlist);
+      countQuery += ` AND playlist = $${countParams.length}`;
+    }
+    
+    if (session_id) {
+      countParams.push(session_id);
+      countQuery += ` AND session_id = $${countParams.length}`;
+    }
+    
+    const countResult = await pool.query(countQuery, countParams);
+    
+    res.json({
+      logs: result.rows,
+      total: parseInt(countResult.rows[0].count),
+      limit: parseInt(limit),
+      offset: parseInt(offset)
+    });
+  } catch (err) {
+    console.error('Error fetching game logs:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get game statistics
+app.get('/api/admin/game-stats', authenticateToken, async (req, res) => {
+  try {
+    const stats = {};
+    
+    // Total plays
+    const totalResult = await pool.query('SELECT COUNT(*) FROM game_logs');
+    stats.totalPlays = parseInt(totalResult.rows[0].count);
+    
+    // Plays by playlist
+    const playlistResult = await pool.query(
+      'SELECT playlist, COUNT(*) as count FROM game_logs GROUP BY playlist'
+    );
+    stats.byPlaylist = {};
+    playlistResult.rows.forEach(row => {
+      stats.byPlaylist[row.playlist] = parseInt(row.count);
+    });
+    
+    // Most played songs
+    const mostPlayedResult = await pool.query(`
+      SELECT gl.video_id, s.title, s.artist, s.year, COUNT(*) as play_count 
+      FROM game_logs gl 
+      JOIN songs s ON gl.video_id = s.video_id 
+      GROUP BY gl.video_id, s.title, s.artist, s.year 
+      ORDER BY play_count DESC 
+      LIMIT 10
+    `);
+    stats.mostPlayed = mostPlayedResult.rows;
+    
+    // Success rate
+    const successResult = await pool.query(`
+      SELECT 
+        COUNT(*) FILTER (WHERE guessed_correctly = true) as correct,
+        COUNT(*) FILTER (WHERE guessed_correctly = false) as incorrect,
+        COUNT(*) as total
+      FROM game_logs 
+      WHERE guessed_correctly IS NOT NULL
+    `);
+    if (successResult.rows[0].total > 0) {
+      stats.successRate = {
+        correct: parseInt(successResult.rows[0].correct),
+        incorrect: parseInt(successResult.rows[0].incorrect),
+        total: parseInt(successResult.rows[0].total),
+        percentage: ((parseInt(successResult.rows[0].correct) / parseInt(successResult.rows[0].total)) * 100).toFixed(2)
+      };
+    } else {
+      stats.successRate = { correct: 0, incorrect: 0, total: 0, percentage: 0 };
+    }
+    
+    res.json(stats);
+  } catch (err) {
+    console.error('Error fetching game stats:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

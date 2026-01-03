@@ -7,8 +7,19 @@ const gameState = {
     },
     currentSong: null,
     usedSongIds: new Set(),
-    selectedPlaylist: 'modern' // 'modern' or 'classic'
+    selectedPlaylist: 'modern', // 'modern' or 'classic'
+    sessionId: null // Session ID for tracking game plays
 };
+
+// Generate or retrieve session ID
+function getSessionId() {
+    let sessionId = localStorage.getItem('hyttehits_session_id');
+    if (!sessionId) {
+        sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('hyttehits_session_id', sessionId);
+    }
+    return sessionId;
+}
 
 // API Configuration
 const API_URL = '/api';
@@ -21,6 +32,9 @@ let songCache = {
 
 // Initialize game
 async function initGame() {
+    // Initialize session ID
+    gameState.sessionId = getSessionId();
+    
     // Load songs from API
     try {
         await loadSongs();
@@ -137,13 +151,31 @@ async function markSongAsBroken(videoId) {
             },
             body: JSON.stringify({ status: 'broken' })
         });
-        console.log(`Marked song ${videoId} as broken`);
-        
-        // Reload songs to update cache
-        await loadSongs();
     } catch (error) {
         console.error('Error marking song as broken:', error);
     }
+}
+
+// Log game play to database
+async function logGamePlay(videoId, teamName, playlist, guessedCorrectly) {
+    try {
+        await fetch(`${API_URL}/game-logs`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                video_id: videoId,
+                team_name: teamName,
+                playlist: playlist,
+                guessed_correctly: guessedCorrectly,
+                session_id: gameState.sessionId
+            })
+        });
+    } catch (error) {
+        console.error('Error logging game play:', error);
+    }
+}
 }
 
 // Show guess options based on current timeline
@@ -237,6 +269,11 @@ function makeGuess(position) {
     
     // Stop playback (keep modal visible for result)
     window.youtubeAPI.stopVideo();
+    
+    // Log the game play
+    const currentTeam = gameState.currentTeam;
+    const teamName = gameState.teams[currentTeam].name;
+    logGamePlay(song.video_id, teamName, gameState.selectedPlaylist, isCorrect);
     
     // Show result
     showResult(isCorrect, position);

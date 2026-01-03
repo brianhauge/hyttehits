@@ -55,3 +55,39 @@ CREATE TABLE IF NOT EXISTS sessions (
 -- Create index on token for faster lookups
 CREATE INDEX idx_sessions_token ON sessions(token);
 CREATE INDEX idx_sessions_expires_at ON sessions(expires_at);
+
+-- Create audit_logs table for tracking admin actions
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    action VARCHAR(50) NOT NULL, -- 'create', 'update', 'delete', 'login', 'logout', etc.
+    resource_type VARCHAR(50) NOT NULL, -- 'song', 'user', 'auth', etc.
+    resource_id VARCHAR(255), -- ID of the affected resource
+    details TEXT, -- JSON string with additional details
+    ip_address VARCHAR(45), -- IPv4 or IPv6
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create indexes for audit logs
+CREATE INDEX idx_audit_logs_user_id ON audit_logs(user_id);
+CREATE INDEX idx_audit_logs_action ON audit_logs(action);
+CREATE INDEX idx_audit_logs_resource_type ON audit_logs(resource_type);
+CREATE INDEX idx_audit_logs_created_at ON audit_logs(created_at);
+
+-- Create game_logs table for tracking song plays
+CREATE TABLE IF NOT EXISTS game_logs (
+    id SERIAL PRIMARY KEY,
+    video_id VARCHAR(50) NOT NULL REFERENCES songs(video_id) ON DELETE CASCADE,
+    team_name VARCHAR(100), -- Team that played the song
+    playlist VARCHAR(50) NOT NULL, -- 'modern' or 'classic'
+    guessed_correctly BOOLEAN, -- Whether the guess was correct
+    session_id VARCHAR(255), -- Browser session ID
+    ip_address VARCHAR(45), -- IPv4 or IPv6
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create indexes for game logs
+CREATE INDEX idx_game_logs_video_id ON game_logs(video_id);
+CREATE INDEX idx_game_logs_playlist ON game_logs(playlist);
+CREATE INDEX idx_game_logs_created_at ON game_logs(created_at);
+CREATE INDEX idx_game_logs_session_id ON game_logs(session_id);

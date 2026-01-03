@@ -13,7 +13,11 @@ A web-based implementation of the Hytte Hits music party game with YouTube integ
 - Score tracking and winner declaration
 - Responsive design
 - RESTful API for song management
-- **Admin panel for song management** (add, edit, delete, bulk check, find alternatives)
+- **Admin panel with:**
+  - User administration (create, edit, delete admin users)
+  - Song management (add, edit, delete, bulk check, find alternatives)
+  - Audit logging (track all admin actions)
+  - Game analytics (track song plays, success rates, most played songs)
 
 ## Architecture
 
@@ -138,6 +142,32 @@ DATABASE_URL=postgresql://hyttehits:hyttehits123@localhost:5432/hyttehits npm st
 | expires_at  | TIMESTAMP | Token expiration time                 |
 | created_at  | TIMESTAMP | Session creation time                 |
 
+### Audit Logs Table
+
+| Column        | Type      | Description                           |
+|---------------|-----------|---------------------------------------|
+| id            | SERIAL    | Primary key                           |
+| user_id       | INTEGER   | Foreign key to users table            |
+| action        | VARCHAR   | Action type (create, update, delete, etc.) |
+| resource_type | VARCHAR   | Resource type (song, user, auth, etc.) |
+| resource_id   | VARCHAR   | ID of affected resource               |
+| details       | TEXT      | JSON string with additional details   |
+| ip_address    | VARCHAR   | Client IP address (IPv4/IPv6)         |
+| created_at    | TIMESTAMP | Action timestamp                      |
+
+### Game Logs Table
+
+| Column            | Type      | Description                           |
+|-------------------|-----------|---------------------------------------|
+| id                | SERIAL    | Primary key                           |
+| video_id          | VARCHAR   | Foreign key to songs table            |
+| team_name         | VARCHAR   | Team that played the song             |
+| playlist          | VARCHAR   | Playlist type (modern/classic)        |
+| guessed_correctly | BOOLEAN   | Whether the guess was correct         |
+| session_id        | VARCHAR   | Browser session ID                    |
+| ip_address        | VARCHAR   | Client IP address (IPv4/IPv6)         |
+| created_at        | TIMESTAMP | Play timestamp                        |
+
 ## Admin Panel
 
 ### Accessing the Admin Panel
@@ -165,6 +195,34 @@ DATABASE_URL=postgresql://hyttehits:hyttehits123@localhost:5432/hyttehits npm st
 - Find alternative videos on YouTube with one click
 - Edit video IDs to update with working alternatives
 - Delete songs that can't be fixed
+
+#### Users Tab
+- View all admin users
+- Create new admin users
+- Edit user details (username, password, role)
+- Delete users (cannot delete yourself)
+- Track last login times
+
+#### Audit Logs Tab
+- View all admin actions (login, logout, create, update, delete)
+- Filter by action type (login, logout, create, update, delete)
+- Filter by resource type (song, user, auth)
+- Pagination support (50 records per page)
+- See who did what and when
+- IP address tracking
+- Detailed JSON information for each action
+
+#### Game Logs Tab
+- View game play statistics
+- Total plays count
+- Plays by playlist (Modern/Classic)
+- Success rate (percentage of correct guesses)
+- Most played songs leaderboard
+- Recent game plays log
+- Filter by playlist
+- Pagination support (50 records per page)
+- Track which team played each song
+- See guess results (correct/incorrect)
 
 #### Statistics Tab
 - View database statistics in real-time
@@ -294,6 +352,102 @@ Response: {
   "working": 350,
   "broken": 10,
   "unchecked": 28
+}
+```
+
+#### User Administration
+
+Get all users:
+```
+GET /api/admin/users
+Headers: { "Authorization": "Bearer <token>" }
+```
+
+Create user:
+```
+POST /api/admin/users
+Headers: { "Authorization": "Bearer <token>" }
+Body: {
+  "username": "newadmin",
+  "password": "password123",
+  "role": "admin"
+}
+```
+
+Update user:
+```
+PUT /api/admin/users/:id
+Headers: { "Authorization": "Bearer <token>" }
+Body: {
+  "username": "updated_username",
+  "password": "new_password",  // optional
+  "role": "admin"
+}
+```
+
+Delete user:
+```
+DELETE /api/admin/users/:id
+Headers: { "Authorization": "Bearer <token>" }
+```
+
+#### Audit Logs
+
+Get audit logs:
+```
+GET /api/admin/audit-logs?limit=50&offset=0&action=login&resource_type=song
+Headers: { "Authorization": "Bearer <token>" }
+Response: {
+  "logs": [...],
+  "total": 100,
+  "limit": 50,
+  "offset": 0
+}
+```
+
+#### Game Logs & Statistics
+
+Log a song play (public endpoint):
+```
+POST /api/game-logs
+Body: {
+  "video_id": "dQw4w9WgXcQ",
+  "team_name": "Team 1",
+  "playlist": "modern",
+  "guessed_correctly": true,
+  "session_id": "session_123456"
+}
+```
+
+Get game logs:
+```
+GET /api/admin/game-logs?limit=50&offset=0&playlist=modern
+Headers: { "Authorization": "Bearer <token>" }
+Response: {
+  "logs": [...],
+  "total": 500,
+  "limit": 50,
+  "offset": 0
+}
+```
+
+Get game statistics:
+```
+GET /api/admin/game-stats
+Headers: { "Authorization": "Bearer <token>" }
+Response: {
+  "totalPlays": 500,
+  "byPlaylist": {
+    "modern": 300,
+    "classic": 200
+  },
+  "mostPlayed": [...],
+  "successRate": {
+    "correct": 350,
+    "incorrect": 150,
+    "total": 500,
+    "percentage": "70.00"
+  }
 }
 ```
 

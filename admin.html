@@ -40,6 +40,9 @@
             <button class="tab-btn active" data-tab="songs">All Songs</button>
             <button class="tab-btn" data-tab="add">Add Song</button>
             <button class="tab-btn" data-tab="broken">Broken Songs</button>
+            <button class="tab-btn" data-tab="users">Users</button>
+            <button class="tab-btn" data-tab="audit">Audit Logs</button>
+            <button class="tab-btn" data-tab="game">Game Logs</button>
             <button class="tab-btn" data-tab="stats">Statistics</button>
         </nav>
 
@@ -172,10 +175,260 @@
                     </div>
                 </div>
             </div>
+
+            <!-- User Administration Tab -->
+            <div id="usersTab" class="tab-content">
+                <div class="tab-header">
+                    <h2>User Administration</h2>
+                    <button id="addUserBtn" class="btn btn-primary">Add User</button>
+                </div>
+                <div class="table-container">
+                    <table id="usersTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Username</th>
+                                <th>Role</th>
+                                <th>Created</th>
+                                <th>Last Login</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <tr><td colspan="6" class="loading">Loading users...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Audit Logs Tab -->
+            <div id="auditTab" class="tab-content">
+                <div class="tab-header">
+                    <h2>Audit Logs</h2>
+                    <div class="actions">
+                        <select id="auditActionFilter">
+                            <option value="">All Actions</option>
+                            <option value="login">Login</option>
+                            <option value="logout">Logout</option>
+                            <option value="create">Create</option>
+                            <option value="update">Update</option>
+                            <option value="delete">Delete</option>
+                        </select>
+                        <select id="auditResourceFilter">
+                            <option value="">All Resources</option>
+                            <option value="song">Songs</option>
+                            <option value="user">Users</option>
+                            <option value="auth">Auth</option>
+                        </select>
+                        <button id="refreshAuditBtn" class="btn btn-secondary">Refresh</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table id="auditLogsTable">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>User</th>
+                                <th>Action</th>
+                                <th>Resource</th>
+                                <th>Resource ID</th>
+                                <th>IP Address</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody id="auditLogsTableBody">
+                            <tr><td colspan="7" class="loading">Loading audit logs...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination">
+                    <button id="auditPrevBtn" class="btn btn-secondary">Previous</button>
+                    <span id="auditPageInfo">Page 1</span>
+                    <button id="auditNextBtn" class="btn btn-secondary">Next</button>
+                </div>
+            </div>
+
+            <!-- Game Logs Tab -->
+            <div id="gameTab" class="tab-content">
+                <div class="tab-header">
+                    <h2>Game Logs</h2>
+                    <div class="actions">
+                        <select id="gamePlaylistFilter">
+                            <option value="">All Playlists</option>
+                            <option value="modern">Modern</option>
+                            <option value="classic">Classic</option>
+                        </select>
+                        <button id="refreshGameBtn" class="btn btn-secondary">Refresh</button>
+                    </div>
+                </div>
+                <div class="stats-grid" style="margin-bottom: 30px;">
+                    <div class="stat-card">
+                        <h3>Total Plays</h3>
+                        <div class="stat-value" id="gameTotalPlays">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Modern Plays</h3>
+                        <div class="stat-value" id="gameModernPlays">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Classic Plays</h3>
+                        <div class="stat-value" id="gameClassicPlays">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Success Rate</h3>
+                        <div class="stat-value" id="gameSuccessRate">-</div>
+                    </div>
+                </div>
+                <h3>Most Played Songs</h3>
+                <div class="table-container">
+                    <table id="mostPlayedTable">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Artist</th>
+                                <th>Year</th>
+                                <th>Plays</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mostPlayedTableBody">
+                            <tr><td colspan="4" class="loading">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <h3 style="margin-top: 30px;">Recent Game Logs</h3>
+                <div class="table-container">
+                    <table id="gameLogsTable">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Song</th>
+                                <th>Artist</th>
+                                <th>Team</th>
+                                <th>Playlist</th>
+                                <th>Correct?</th>
+                            </tr>
+                        </thead>
+                        <tbody id="gameLogsTableBody">
+                            <tr><td colspan="6" class="loading">Loading game logs...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination">
+                    <button id="gamePrevBtn" class="btn btn-secondary">Previous</button>
+                    <span id="gamePageInfo">Page 1</span>
+                    <button id="gameNextBtn" class="btn btn-secondary">Next</button>
+                </div>
+            </div>
+
+            <!-- Statistics Tab -->
+            <div id="statsTab" class="tab-content">
+                <div class="tab-header">
+                    <h2>Database Statistics</h2>
+                    <button id="refreshStatsBtn" class="btn btn-secondary">Refresh</button>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>Total Songs</h3>
+                        <div class="stat-value" id="statTotal">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Modern Songs</h3>
+                        <div class="stat-value" id="statModern">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Classic Songs</h3>
+                        <div class="stat-value" id="statClassic">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Working Songs</h3>
+                        <div class="stat-value" id="statWorking">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Broken Songs</h3>
+                        <div class="stat-value" id="statBroken">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Unchecked Songs</h3>
+                        <div class="stat-value" id="statUnchecked">-</div>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
 
     <!-- Edit Song Modal -->
+    <div id="editModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Song</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form id="editSongForm" class="song-form">
+                <input type="hidden" id="editOriginalVideoId">
+                <div class="form-group">
+                    <label for="editVideoId">YouTube Video ID *</label>
+                    <input type="text" id="editVideoId" name="video_id" required>
+                </div>
+                <div class="form-group">
+                    <label for="editTitle">Title *</label>
+                    <input type="text" id="editTitle" name="title" required>
+                </div>
+                <div class="form-group">
+                    <label for="editArtist">Artist *</label>
+                    <input type="text" id="editArtist" name="artist" required>
+                </div>
+                <div class="form-group">
+                    <label for="editCategory">Category *</label>
+                    <select id="editCategory" name="category" required>
+                        <option value="Modern">Modern (2016-2025)</option>
+                        <option value="Classic">Classic (1952-2025)</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                    <button type="button" class="btn btn-secondary modal-close">Cancel</button>
+                </div>
+                <div id="editSongMessage" class="message"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add/Edit User Modal -->
+    <div id="userModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="userModalTitle">Add User</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form id="userForm" class="song-form">
+                <input type="hidden" id="userId">
+                <div class="form-group">
+                    <label for="userUsername">Username *</label>
+                    <input type="text" id="userUsername" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="userPassword">Password <span id="passwordOptional" class="hidden">(leave blank to keep current)</span></label>
+                    <input type="password" id="userPassword" name="password">
+                    <small>Minimum 8 characters</small>
+                </div>
+                <div class="form-group">
+                    <label for="userRole">Role *</label>
+                    <select id="userRole" name="role" required>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Save</button>
+                    <button type="button" class="btn btn-secondary modal-close">Cancel</button>
+                </div>
+                <div id="userMessage" class="message"></div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/admin.js"></script>
+</body>
+</html>
     <div id="editModal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
