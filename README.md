@@ -7,6 +7,7 @@ A web-based implementation of the Hytte Hits music party game with YouTube integ
 - Two-team gameplay
 - YouTube integration for playing real music
 - PostgreSQL database with 388 songs from Modern (2016-2025) and Classic (1952-2025) categories
+- **Dynamic category system** - categories are loaded from the database and can be managed through the admin panel
 - Automatic song status tracking (working/broken)
 - Interactive timeline showing guessed years in ascending order
 - Guess if a song was released before, between, or after existing years
@@ -14,6 +15,7 @@ A web-based implementation of the Hytte Hits music party game with YouTube integ
 - Responsive design
 - RESTful API for song management
 - **Admin panel with:**
+  - Category management (create, edit, delete categories)
   - User administration (create, edit, delete admin users)
   - Song management (add, edit, delete, bulk check, find alternatives)
   - Audit logging (track all admin actions)
@@ -71,7 +73,7 @@ A web-based implementation of the Hytte Hits music party game with YouTube integ
 5. **Play the game**
    - Open your browser and go to `http://localhost:8081`
    - Enter team names
-   - Select category (Modern or Classic)
+   - Select a category from the dropdown (dynamically loaded from database)
    - Click "Start Game"
    - Enjoy!
 
@@ -79,6 +81,8 @@ A web-based implementation of the Hytte Hits music party game with YouTube integ
    - Go to `http://localhost:8081/admin`
    - Login with your admin credentials
    - Manage songs (add, edit, delete, check availability, find alternatives)
+   - Manage categories (create, edit, delete)
+   - Categories you create will automatically appear in the game selector
 
 ### Development Setup
 
@@ -92,7 +96,7 @@ DATABASE_URL=postgresql://hyttehits:hyttehits123@localhost:5432/hyttehits npm st
 
 ## How to Play
 
-1. **Setup**: Two teams enter their names and select a category
+1. **Setup**: Two teams enter their names and select a category (dynamically loaded from the database)
 2. **Play a Song**: The current team hears a random track from the selected category
 3. **Make a Guess**: The team guesses where the song belongs in their timeline:
    - Before all existing years
@@ -103,6 +107,27 @@ DATABASE_URL=postgresql://hyttehits:hyttehits123@localhost:5432/hyttehits npm st
    - If incorrect, the team doesn't score and loses their turn
 5. **Switch Teams**: Play alternates between teams
 6. **Win**: First team to correctly place 10 songs in chronological order wins!
+
+## Category System
+
+Hytte Hits uses a flexible category system that allows you to organize songs in any way you want:
+
+- **Dynamic Categories**: Categories are loaded from the database, not hardcoded
+- **Create Custom Categories**: Use the admin panel to create categories like "80s Hits", "Danish Songs", "Rock Classics", etc.
+- **Multiple Categories per Song**: Songs can belong to multiple categories simultaneously
+- **Automatic Game Integration**: Any category you create will automatically appear in the game's category selector
+- **Default Categories**: The system comes with two default categories:
+  - **Modern** (2016-2025): 136 contemporary songs
+  - **Classic** (1952-2025): 252 timeless classics
+
+### Creating New Categories
+
+1. Go to the admin panel at `http://localhost:8081/admin`
+2. Click the "Categories" tab
+3. Click "Create New Category"
+4. Enter a name and optional description
+5. The category will immediately appear in the game selector
+6. Add songs to your new category through the "Add Song" or "All Songs" tabs
 
 ## Database Schema
 
@@ -181,13 +206,21 @@ DATABASE_URL=postgresql://hyttehits:hyttehits123@localhost:5432/hyttehits npm st
 #### All Songs Tab
 - View all songs in the database
 - Search and filter songs
-- Edit song details (title, artist, category, video ID)
+- Edit song details (title, artist, categories, video ID)
 - Delete songs
 - Check all songs for YouTube availability (bulk operation)
 
+#### Categories Tab
+- View all categories with song counts
+- Create new categories (e.g., "80s Hits", "Danish Songs")
+- Edit category names and descriptions
+- Delete categories (protected - cannot delete categories with songs)
+- **Categories automatically appear in the game selector**
+
 #### Add Song Tab
 - Add new songs to the database
-- Required fields: YouTube Video ID, Title, Artist, Category
+- Required fields: YouTube Video ID, Title, Artist
+- Select one or more categories for each song
 - Automatic validation
 
 #### Broken Songs Tab
@@ -250,6 +283,15 @@ Note: The script will prevent duplicate usernames and enforce minimum password l
 ## API Endpoints
 
 ### Public Endpoints
+
+#### Get All Categories
+```
+GET /api/categories
+Response: [
+  { "id": 1, "name": "Modern", "description": "Modern songs (2016-2025)", "song_count": "136" },
+  { "id": 2, "name": "Classic", "description": "Classic songs (1952-2025)", "song_count": "252" }
+]
+```
 
 #### Get All Songs
 ```

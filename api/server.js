@@ -164,6 +164,29 @@ app.get('/api/auth/verify', authenticateToken, (req, res) => {
 });
 
 // ============================================
+// PUBLIC ROUTES
+// ============================================
+
+// Get all categories (public endpoint for game interface)
+app.get('/api/categories', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT c.id, c.name, c.description, COUNT(sc.song_id) as song_count
+      FROM categories c
+      LEFT JOIN song_categories sc ON c.id = sc.category_id
+      LEFT JOIN songs s ON sc.song_id = s.id AND s.status = 'working'
+      GROUP BY c.id
+      HAVING COUNT(sc.song_id) > 0
+      ORDER BY c.name
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching categories:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ============================================
 // PUBLIC SONG ROUTES
 // ============================================
 

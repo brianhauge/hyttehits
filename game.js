@@ -29,6 +29,9 @@ let songCache = {
     categories: {} // Will store songs by category name
 };
 
+// Available categories
+let availableCategories = [];
+
 // Initialize game
 async function initGame() {
     console.log('Initializing game...');
@@ -36,6 +39,17 @@ async function initGame() {
     // Initialize session ID
     gameState.sessionId = getSessionId();
     console.log('Session ID:', gameState.sessionId);
+    
+    // Load categories first
+    try {
+        console.log('Loading categories from API...');
+        await loadCategories();
+        console.log(`Loaded ${availableCategories.length} categories`);
+    } catch (error) {
+        console.error('Error loading categories from API:', error);
+        alert('Failed to load categories. Please make sure the API server is running.');
+        return;
+    }
     
     // Load songs from API
     try {
@@ -57,6 +71,41 @@ async function initGame() {
     document.getElementById('continue-game').addEventListener('click', continueGame);
     document.getElementById('play-again').addEventListener('click', resetGame);
     console.log('Game initialized successfully!');
+}
+
+// Load categories from API and populate selector
+async function loadCategories() {
+    try {
+        const response = await fetch(`${API_URL}/categories`);
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch categories from API');
+        }
+        
+        availableCategories = await response.json();
+        
+        // Populate category selector
+        const categorySelect = document.getElementById('category-select');
+        categorySelect.innerHTML = '';
+        
+        availableCategories.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category.name;
+            option.textContent = `${category.name}${category.description ? ' - ' + category.description : ''} (${category.song_count} sange)`;
+            categorySelect.appendChild(option);
+        });
+        
+        // Set first category as default
+        if (availableCategories.length > 0) {
+            gameState.selectedCategory = availableCategories[0].name;
+        }
+        
+        console.log('Categories loaded:', availableCategories.map(c => `${c.name} (${c.song_count} songs)`).join(', '));
+        
+    } catch (error) {
+        console.error('Error loading categories:', error);
+        throw error;
+    }
 }
 
 // Load songs from API
@@ -184,11 +233,9 @@ async function playNextSong() {
             console.error('Error playing video:', error);
             // Mark song as broken in database
             await markSongAsBroken(song.video_id);
-            // Try next song
-            alert('Video kunne ikke afspilles. Prøver næste sang...');
-            setTimeout(() => {
-                playNextSong();
-            }, 1000);
+            // Try next song silently
+            console.log('Video could not be played. Trying next song...');
+            playNextSong();
             return;
         }
     } catch (error) {
