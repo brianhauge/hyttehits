@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS game_logs (
     id SERIAL PRIMARY KEY,
     video_id VARCHAR(50) NOT NULL REFERENCES songs(video_id) ON DELETE CASCADE,
     team_name VARCHAR(100), -- Team that played the song
-    playlist VARCHAR(50) NOT NULL, -- 'modern' or 'classic'
+    category VARCHAR(50) NOT NULL, -- Category name (e.g., 'Modern', 'Classic')
     guessed_correctly BOOLEAN, -- Whether the guess was correct
     session_id VARCHAR(255), -- Browser session ID
     ip_address VARCHAR(45), -- IPv4 or IPv6
@@ -88,7 +88,7 @@ CREATE TABLE IF NOT EXISTS game_logs (
 
 -- Create indexes for game logs
 CREATE INDEX idx_game_logs_video_id ON game_logs(video_id);
-CREATE INDEX idx_game_logs_playlist ON game_logs(playlist);
+CREATE INDEX idx_game_logs_category ON game_logs(category);
 CREATE INDEX idx_game_logs_created_at ON game_logs(created_at);
 CREATE INDEX idx_game_logs_session_id ON game_logs(session_id);
 

@@ -944,12 +944,12 @@ app.post('/api/game-logs', async (req, res) => {
       return res.status(400).json({ error: 'video_id required' });
     }
     
-    // Use category if provided, otherwise fall back to 'modern' for backwards compatibility
-    const playlistValue = category || 'modern';
+    // Use category if provided, otherwise fall back to 'Modern' for backwards compatibility
+    const categoryValue = category || 'Modern';
     
     await pool.query(
-      'INSERT INTO game_logs (video_id, team_name, playlist, guessed_correctly, session_id, ip_address) VALUES ($1, $2, $3, $4, $5, $6)',
-      [video_id, team_name, playlistValue, guessed_correctly, session_id, getClientIp(req)]
+      'INSERT INTO game_logs (video_id, team_name, category, guessed_correctly, session_id, ip_address) VALUES ($1, $2, $3, $4, $5, $6)',
+      [video_id, team_name, categoryValue, guessed_correctly, session_id, getClientIp(req)]
     );
     
     res.status(201).json({ message: 'Game log created' });
@@ -962,7 +962,10 @@ app.post('/api/game-logs', async (req, res) => {
 // Get game logs (admin only)
 app.get('/api/admin/game-logs', authenticateToken, async (req, res) => {
   try {
-    const { limit = 100, offset = 0, video_id, playlist, session_id } = req.query;
+    const { limit = 100, offset = 0, video_id, category, playlist, session_id } = req.query;
+    
+    // Support both 'category' and 'playlist' for backwards compatibility
+    const categoryFilter = category || playlist;
     
     let query = `
       SELECT gl.*, s.title, s.artist, s.year 
@@ -977,9 +980,9 @@ app.get('/api/admin/game-logs', authenticateToken, async (req, res) => {
       query += ` AND gl.video_id = $${params.length}`;
     }
     
-    if (playlist) {
-      params.push(playlist);
-      query += ` AND gl.playlist = $${params.length}`;
+    if (categoryFilter) {
+      params.push(categoryFilter);
+      query += ` AND gl.category = $${params.length}`;
     }
     
     if (session_id) {
@@ -1001,9 +1004,9 @@ app.get('/api/admin/game-logs', authenticateToken, async (req, res) => {
       countQuery += ` AND video_id = $${countParams.length}`;
     }
     
-    if (playlist) {
-      countParams.push(playlist);
-      countQuery += ` AND playlist = $${countParams.length}`;
+    if (categoryFilter) {
+      countParams.push(categoryFilter);
+      countQuery += ` AND category = $${countParams.length}`;
     }
     
     if (session_id) {
@@ -1034,13 +1037,13 @@ app.get('/api/admin/game-stats', authenticateToken, async (req, res) => {
     const totalResult = await pool.query('SELECT COUNT(*) FROM game_logs');
     stats.totalPlays = parseInt(totalResult.rows[0].count);
     
-    // Plays by playlist
-    const playlistResult = await pool.query(
-      'SELECT playlist, COUNT(*) as count FROM game_logs GROUP BY playlist'
+    // Plays by category
+    const categoryResult = await pool.query(
+      'SELECT category, COUNT(*) as count FROM game_logs GROUP BY category'
     );
-    stats.byPlaylist = {};
-    playlistResult.rows.forEach(row => {
-      stats.byPlaylist[row.playlist] = parseInt(row.count);
+    stats.byCategory = {};
+    categoryResult.rows.forEach(row => {
+      stats.byCategory[row.category] = parseInt(row.count);
     });
     
     // Most played songs
