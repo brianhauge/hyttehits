@@ -183,7 +183,7 @@ let allSongs = [];
 async function loadAllSongs() {
     try {
         const data = await apiRequest('/songs');
-        allSongs = data.songs;
+        allSongs = data;
         displaySongs(allSongs);
     } catch (error) {
         console.error('Error loading songs:', error);
@@ -332,7 +332,7 @@ document.getElementById('checkAllBtn').addEventListener('click', async () => {
         const pollInterval = setInterval(async () => {
             try {
                 const data = await apiRequest('/songs');
-                const checkedSongs = data.songs.filter(s => s.last_checked);
+                const checkedSongs = data.filter(s => s.last_checked);
                 completed = checkedSongs.length;
                 
                 const percentage = (completed / total) * 100;
@@ -366,7 +366,7 @@ document.getElementById('checkAllBtn').addEventListener('click', async () => {
 async function loadBrokenSongs() {
     try {
         const data = await apiRequest('/admin/songs/broken');
-        displayBrokenSongs(data.songs);
+        displayBrokenSongs(data);
     } catch (error) {
         console.error('Error loading broken songs:', error);
         document.getElementById('brokenSongsTableBody').innerHTML = 
