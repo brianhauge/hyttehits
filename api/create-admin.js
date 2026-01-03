@@ -45,7 +45,7 @@ async function createAdmin() {
     );
 
     console.log(`Admin user "${username}" created successfully!`);
-    console.log('You can now login at /admin.html');
+    console.log('You can now login at /admin');
   } catch (error) {
     console.error('Error creating admin user:', error.message);
     process.exit(1);

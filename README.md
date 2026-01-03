@@ -72,7 +72,7 @@ A web-based implementation of the Hytte Hits music party game with YouTube integ
    - Enjoy!
 
 6. **Access the admin panel**
-   - Go to `http://localhost:8081/admin.html`
+   - Go to `http://localhost:8081/admin`
    - Login with your admin credentials
    - Manage songs (add, edit, delete, check availability, find alternatives)
 
@@ -142,7 +142,7 @@ DATABASE_URL=postgresql://hyttehits:hyttehits123@localhost:5432/hyttehits npm st
 
 ### Accessing the Admin Panel
 
-1. Navigate to `http://localhost:8081/admin.html`
+1. Navigate to `http://localhost:8081/admin`
 2. Login with your admin credentials
 3. Manage your song database with ease!
 
