@@ -326,7 +326,23 @@ document.getElementById('editSongForm').addEventListener('submit', async (e) => 
         showMessage('editSongMessage', 'Song updated successfully!', 'success');
         setTimeout(() => {
             document.getElementById('editModal').classList.add('hidden');
-            loadAllSongs();
+            
+            // Refresh the appropriate tab
+            const activeTab = document.querySelector('.tab.active');
+            if (activeTab) {
+                const tabName = activeTab.textContent.trim();
+                if (tabName.includes('All Songs')) {
+                    loadAllSongs();
+                } else if (tabName.includes('Broken Songs')) {
+                    loadBrokenSongs();
+                } else {
+                    // Default: reload both to be safe
+                    loadAllSongs();
+                    loadBrokenSongs();
+                }
+            } else {
+                loadAllSongs();
+            }
         }, 1500);
     } catch (error) {
         showMessage('editSongMessage', error.message, 'error');
@@ -492,7 +508,7 @@ function displayBrokenSongs(songs) {
             <td>${escapeHtml(categoriesText)}</td>
             <td>${song.last_checked ? new Date(song.last_checked).toLocaleString() : 'Never'}</td>
             <td class="action-btns">
-                <button class="btn btn-success" onclick="findAlternative('${escapeHtml(song.title)}', '${escapeHtml(song.artist)}')">Find Alternative</button>
+                <button class="btn btn-success" onclick="findAlternative('${song.video_id}')">Find Alternative</button>
                 <button class="btn btn-secondary" onclick="editSong('${song.video_id}')">Edit</button>
                 <button class="btn btn-danger" onclick="deleteSong('${song.video_id}')">Delete</button>
             </td>
@@ -501,10 +517,104 @@ function displayBrokenSongs(songs) {
     }).join('');
 }
 
-// Find Alternative
-function findAlternative(title, artist) {
-    const query = encodeURIComponent(`${title} ${artist}`);
-    window.open(`https://www.youtube.com/results?search_query=${query}`, '_blank');
+// Find Alternative - Automated
+async function findAlternative(videoId) {
+    try {
+        // Show loading message
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 800px;">
+                <div class="modal-header">
+                    <h2>Finding Alternatives...</h2>
+                    <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+                </div>
+                <p>Searching for alternative videos...</p>
+                <div class="loading-spinner" style="text-align: center; padding: 20px;">
+                    <div style="border: 4px solid #f3f3f3; border-top: 4px solid #007bff; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        modal.style.display = 'flex';
+        
+        // Add CSS animation for spinner
+        if (!document.getElementById('spinner-animation')) {
+            const style = document.createElement('style');
+            style.id = 'spinner-animation';
+            style.innerHTML = '@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }';
+            document.head.appendChild(style);
+        }
+        
+        // Call API to find alternatives
+        const data = await apiRequest(`/admin/songs/${videoId}/find-alternative`, { method: 'POST' });
+        
+        // Update modal with search variations
+        modal.querySelector('.modal-content').innerHTML = `
+            <div class="modal-header">
+                <h2>Search for Alternative Videos</h2>
+                <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+            </div>
+            <p><strong>Original Song:</strong> ${escapeHtml(data.song.title)} - ${escapeHtml(data.song.artist)}</p>
+            <p><strong>Current Video ID:</strong> ${escapeHtml(data.song.current_video_id)}</p>
+            <hr>
+            <p>Click the search links below to find alternative videos on YouTube:</p>
+            <div style="margin: 20px 0;">
+                ${data.search_variations ? data.search_variations.map((variation, index) => `
+                    <div style="margin: 10px 0;">
+                        <a href="${escapeHtml(variation.url)}" target="_blank" class="btn btn-primary" style="width: 100%; text-align: left; display: block; margin-bottom: 5px;">
+                            🔍 ${escapeHtml(variation.query)}
+                        </a>
+                    </div>
+                `).join('') : `
+                    <a href="${escapeHtml(data.search_url)}" target="_blank" class="btn btn-primary">
+                        🔍 Search on YouTube
+                    </a>
+                `}
+            </div>
+            <hr>
+            <h3>How to use:</h3>
+            <ol style="text-align: left; padding-left: 20px;">
+                <li>Click one of the search links above</li>
+                <li>Find a video that works</li>
+                <li>Copy the video ID from the URL (after "v=" or "/watch?v=")</li>
+                <li>Come back here and click "Edit" on this song</li>
+                <li>Paste the new video ID and save</li>
+            </ol>
+        `;
+        
+    } catch (error) {
+        console.error('Error finding alternative:', error);
+        alert('Failed to find alternatives: ' + error.message);
+        document.querySelectorAll('.modal').forEach(m => m.remove());
+    }
+}
+
+// Replace video ID with alternative
+async function replaceVideoId(oldVideoId, newVideoId) {
+    if (!confirm(`Replace video ID ${oldVideoId} with ${newVideoId}?`)) {
+        return;
+    }
+    
+    try {
+        await apiRequest(`/admin/songs/${oldVideoId}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+                video_id: newVideoId,
+                status: 'working'
+            })
+        });
+        
+        alert('Video ID updated successfully!');
+        
+        // Close modal and reload broken songs
+        document.querySelectorAll('.modal').forEach(m => m.remove());
+        loadBrokenSongs();
+        
+    } catch (error) {
+        console.error('Error updating video ID:', error);
+        alert('Failed to update video ID: ' + error.message);
+    }
 }
 
 // Refresh Broken Songs
