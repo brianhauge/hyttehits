@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hytte Hits Admin</title>
+    <link rel="stylesheet" href="/admin.css">
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="screen">
+        <div class="login-container">
+            <h1>Hytte Hits Admin</h1>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required autofocus>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Login</button>
+                <div id="loginError" class="error-message"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div id="adminScreen" class="screen hidden">
+        <header>
+            <h1>Hytte Hits Admin</h1>
+            <div class="header-actions">
+                <span id="welcomeMessage"></span>
+                <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+            </div>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-btn active" data-tab="songs">All Songs</button>
+            <button class="tab-btn" data-tab="add">Add Song</button>
+            <button class="tab-btn" data-tab="categories">Categories</button>
+            <button class="tab-btn" data-tab="broken">Broken Songs</button>
+            <button class="tab-btn" data-tab="users">Users</button>
+            <button class="tab-btn" data-tab="audit">Audit Logs</button>
+            <button class="tab-btn" data-tab="game">Game Logs</button>
+            <button class="tab-btn" data-tab="stats">Statistics</button>
+        </nav>
+
+        <main>
+            <!-- All Songs Tab -->
+            <div id="songsTab" class="tab-content active">
+                <div class="tab-header">
+                    <h2>All Songs</h2>
+                    <div class="actions">
+                        <button id="checkAllBtn" class="btn btn-primary">Check All Songs</button>
+                        <input type="search" id="searchInput" placeholder="Search songs...">
+                    </div>
+                </div>
+                <div id="checkProgress" class="progress-container hidden">
+                    <div class="progress-bar">
+                        <div id="progressBar" class="progress-fill"></div>
+                    </div>
+                    <span id="progressText">Checking songs...</span>
+                </div>
+                <div class="table-container">
+                    <table id="songsTable">
+                        <thead>
+                            <tr>
+                                <th>Video ID</th>
+                                <th>Title</th>
+                                <th>Artist</th>
+                                <th>Category</th>
+                                <th>Status</th>
+                                <th>Last Checked</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="songsTableBody">
+                            <tr><td colspan="7" class="loading">Loading songs...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Add Song Tab -->
+            <div id="addTab" class="tab-content">
+                <div class="tab-header">
+                    <h2>Add New Song</h2>
+                </div>
+                <form id="addSongForm" class="song-form">
+                    <div class="form-group">
+                        <label for="addVideoId">YouTube Video ID *</label>
+                        <input type="text" id="addVideoId" name="video_id" required placeholder="e.g., dQw4w9WgXcQ">
+                        <small>Enter the YouTube video ID (the part after "v=" in the URL)</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="addTitle">Title *</label>
+                        <input type="text" id="addTitle" name="title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="addArtist">Artist *</label>
+                        <input type="text" id="addArtist" name="artist" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="addYear">Year *</label>
+                        <input type="number" id="addYear" name="year" required min="1900" max="2100">
+                    </div>
+                    <div class="form-group">
+                        <label>Categories * (select at least one)</label>
+                        <div id="addCategoriesCheckboxes" style="margin-top: 10px;">
+                            <!-- Checkboxes will be dynamically loaded -->
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Add Song</button>
+                        <button type="reset" class="btn btn-secondary">Clear</button>
+                    </div>
+                    <div id="addSongMessage" class="message"></div>
+                </form>
+            </div>
+
+            <!-- Categories Tab -->
+            <div id="categoriesTab" class="tab-content">
+                <div class="tab-header">
+                    <h2>Categories Management</h2>
+                    <button id="addCategoryBtn" class="btn btn-primary">Add Category</button>
+                </div>
+                <div class="table-container">
+                    <table id="categoriesTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Description</th>
+                                <th>Songs</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="categoriesTableBody">
+                            <tr><td colspan="6" class="loading">Loading categories...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Broken Songs Tab -->
+            <div id="brokenTab" class="tab-content">
+                <div class="tab-header">
+                    <h2>Broken Songs</h2>
+                    <button id="refreshBrokenBtn" class="btn btn-secondary">Refresh</button>
+                </div>
+                <div class="table-container">
+                    <table id="brokenSongsTable">
+                        <thead>
+                            <tr>
+                                <th>Video ID</th>
+                                <th>Title</th>
+                                <th>Artist</th>
+                                <th>Category</th>
+                                <th>Last Checked</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="brokenSongsTableBody">
+                            <tr><td colspan="6" class="loading">Loading broken songs...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Statistics Tab -->
+            <div id="statsTab" class="tab-content">
+                <div class="tab-header">
+                    <h2>Database Statistics</h2>
+                    <button id="refreshStatsBtn" class="btn btn-secondary">Refresh</button>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>Total Songs</h3>
+                        <div class="stat-value" id="statTotal">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Modern Songs</h3>
+                        <div class="stat-value" id="statModern">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Classic Songs</h3>
+                        <div class="stat-value" id="statClassic">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Working Songs</h3>
+                        <div class="stat-value" id="statWorking">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Broken Songs</h3>
+                        <div class="stat-value" id="statBroken">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Unchecked Songs</h3>
+                        <div class="stat-value" id="statUnchecked">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Administration Tab -->
+            <div id="usersTab" class="tab-content">
+                <div class="tab-header">
+                    <h2>User Administration</h2>
+                    <button id="addUserBtn" class="btn btn-primary">Add User</button>
+                </div>
+                <div class="table-container">
+                    <table id="usersTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Username</th>
+                                <th>Role</th>
+                                <th>Created</th>
+                                <th>Last Login</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <tr><td colspan="6" class="loading">Loading users...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Audit Logs Tab -->
+            <div id="auditTab" class="tab-content">
+                <div class="tab-header">
+                    <h2>Audit Logs</h2>
+                    <div class="actions">
+                        <select id="auditActionFilter">
+                            <option value="">All Actions</option>
+                            <option value="login">Login</option>
+                            <option value="logout">Logout</option>
+                            <option value="create">Create</option>
+                            <option value="update">Update</option>
+                            <option value="delete">Delete</option>
+                        </select>
+                        <select id="auditResourceFilter">
+                            <option value="">All Resources</option>
+                            <option value="song">Songs</option>
+                            <option value="user">Users</option>
+                            <option value="auth">Auth</option>
+                        </select>
+                        <button id="refreshAuditBtn" class="btn btn-secondary">Refresh</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table id="auditLogsTable">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>User</th>
+                                <th>Action</th>
+                                <th>Resource</th>
+                                <th>Resource ID</th>
+                                <th>IP Address</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody id="auditLogsTableBody">
+                            <tr><td colspan="7" class="loading">Loading audit logs...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination">
+                    <button id="auditPrevBtn" class="btn btn-secondary">Previous</button>
+                    <span id="auditPageInfo">Page 1</span>
+                    <button id="auditNextBtn" class="btn btn-secondary">Next</button>
+                </div>
+            </div>
+
+            <!-- Game Logs Tab -->
+            <div id="gameTab" class="tab-content">
+                <div class="tab-header">
+                    <h2>Game Logs</h2>
+                    <div class="actions">
+                        <select id="gameCategoryFilter">
+                            <option value="">All Categories</option>
+                            <option value="Modern">Modern</option>
+                            <option value="Classic">Classic</option>
+                        </select>
+                        <button id="refreshGameBtn" class="btn btn-secondary">Refresh</button>
+                    </div>
+                </div>
+                <div class="stats-grid" style="margin-bottom: 30px;">
+                    <div class="stat-card">
+                        <h3>Total Plays</h3>
+                        <div class="stat-value" id="gameTotalPlays">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Modern Plays</h3>
+                        <div class="stat-value" id="gameModernPlays">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Classic Plays</h3>
+                        <div class="stat-value" id="gameClassicPlays">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Success Rate</h3>
+                        <div class="stat-value" id="gameSuccessRate">-</div>
+                    </div>
+                </div>
+                <h3>Most Played Songs</h3>
+                <div class="table-container">
+                    <table id="mostPlayedTable">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Artist</th>
+                                <th>Year</th>
+                                <th>Plays</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mostPlayedTableBody">
+                            <tr><td colspan="4" class="loading">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <h3 style="margin-top: 30px;">Recent Game Logs</h3>
+                <div class="table-container">
+                    <table id="gameLogsTable">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Song</th>
+                                <th>Artist</th>
+                                <th>Team</th>
+                                <th>Category</th>
+                                <th>Correct?</th>
+                            </tr>
+                        </thead>
+                        <tbody id="gameLogsTableBody">
+                            <tr><td colspan="6" class="loading">Loading game logs...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination">
+                    <button id="gamePrevBtn" class="btn btn-secondary">Previous</button>
+                    <span id="gamePageInfo">Page 1</span>
+                    <button id="gameNextBtn" class="btn btn-secondary">Next</button>
+                </div>
+            </div>
+
+            <!-- Statistics Tab -->
+            <div id="statsTab" class="tab-content">
+                <div class="tab-header">
+                    <h2>Database Statistics</h2>
+                    <button id="refreshStatsBtn" class="btn btn-secondary">Refresh</button>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>Total Songs</h3>
+                        <div class="stat-value" id="statTotal">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Modern Songs</h3>
+                        <div class="stat-value" id="statModern">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Classic Songs</h3>
+                        <div class="stat-value" id="statClassic">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Working Songs</h3>
+                        <div class="stat-value" id="statWorking">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Broken Songs</h3>
+                        <div class="stat-value" id="statBroken">-</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Unchecked Songs</h3>
+                        <div class="stat-value" id="statUnchecked">-</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Edit Song Modal -->
+    <div id="editModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Song</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form id="editSongForm" class="song-form">
+                <input type="hidden" id="editOriginalVideoId">
+                <input type="hidden" id="editSongId">
+                <div class="form-group">
+                    <label for="editVideoId">YouTube Video ID *</label>
+                    <input type="text" id="editVideoId" name="video_id" required>
+                </div>
+                <div class="form-group">
+                    <label for="editTitle">Title *</label>
+                    <input type="text" id="editTitle" name="title" required>
+                </div>
+                <div class="form-group">
+                    <label for="editArtist">Artist *</label>
+                    <input type="text" id="editArtist" name="artist" required>
+                </div>
+                <div class="form-group">
+                    <label for="editYear">Year *</label>
+                    <input type="number" id="editYear" name="year" required min="1900" max="2100">
+                </div>
+                <div class="form-group">
+                    <label>Categories *</label>
+                    <div id="editCategoriesCheckboxes" style="margin-top: 10px;">
+                        <!-- Checkboxes will be dynamically loaded -->
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                    <button type="button" class="btn btn-secondary modal-close">Cancel</button>
+                </div>
+                <div id="editSongMessage" class="message"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add/Edit User Modal -->
+    <div id="userModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="userModalTitle">Add User</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form id="userForm" class="song-form">
+                <input type="hidden" id="userId">
+                <div class="form-group">
+                    <label for="userUsername">Username *</label>
+                    <input type="text" id="userUsername" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="userPassword">Password <span id="passwordOptional" class="hidden">(leave blank to keep current)</span></label>
+                    <input type="password" id="userPassword" name="password">
+                    <small>Minimum 8 characters</small>
+                </div>
+                <div class="form-group">
+                    <label for="userRole">Role *</label>
+                    <select id="userRole" name="role" required>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Save</button>
+                    <button type="button" class="btn btn-secondary modal-close">Cancel</button>
+                </div>
+                <div id="userMessage" class="message"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add/Edit Category Modal -->
+    <div id="categoryModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="categoryModalTitle">Add Category</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form id="categoryForm" class="song-form">
+                <input type="hidden" id="categoryId">
+                <div class="form-group">
+                    <label for="categoryName">Name *</label>
+                    <input type="text" id="categoryName" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="categoryDescription">Description</label>
+                    <textarea id="categoryDescription" name="description" rows="3"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Save</button>
+                    <button type="button" class="btn btn-secondary modal-close">Cancel</button>
+                </div>
+                <div id="categoryMessage" class="message"></div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/admin.js"></script>
+</body>
+</html>
