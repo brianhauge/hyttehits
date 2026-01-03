@@ -19,9 +19,21 @@ async function populateDatabase() {
     // Execute the SQL
     await client.query(sql);
     
-    // Get counts
-    const modernResult = await client.query('SELECT COUNT(*) FROM songs WHERE playlist = $1', ['modern']);
-    const classicResult = await client.query('SELECT COUNT(*) FROM songs WHERE playlist = $1', ['classic']);
+    // Get counts by category
+    const modernResult = await client.query(`
+      SELECT COUNT(DISTINCT s.id) 
+      FROM songs s 
+      JOIN song_categories sc ON s.id = sc.song_id 
+      JOIN categories c ON sc.category_id = c.id 
+      WHERE c.name = $1
+    `, ['Modern']);
+    const classicResult = await client.query(`
+      SELECT COUNT(DISTINCT s.id) 
+      FROM songs s 
+      JOIN song_categories sc ON s.id = sc.song_id 
+      JOIN categories c ON sc.category_id = c.id 
+      WHERE c.name = $1
+    `, ['Classic']);
     const totalResult = await client.query('SELECT COUNT(*) FROM songs');
     
     console.log('Database populated successfully!');

@@ -5,7 +5,6 @@ CREATE TABLE IF NOT EXISTS songs (
     artist VARCHAR(255) NOT NULL,
     year INTEGER NOT NULL,
     video_id VARCHAR(50) NOT NULL UNIQUE,
-    playlist VARCHAR(50) NOT NULL DEFAULT 'modern', -- 'modern' or 'classic'
     status VARCHAR(20) NOT NULL DEFAULT 'working', -- 'working' or 'broken'
     last_checked TIMESTAMP DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -13,7 +12,6 @@ CREATE TABLE IF NOT EXISTS songs (
 );
 
 -- Create index for faster queries
-CREATE INDEX idx_songs_playlist ON songs(playlist);
 CREATE INDEX idx_songs_status ON songs(status);
 CREATE INDEX idx_songs_video_id ON songs(video_id);
 

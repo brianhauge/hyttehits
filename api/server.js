@@ -398,10 +398,10 @@ app.post('/api/admin/songs', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'At least one category is required' });
     }
     
-    // Insert song (set playlist to 'modern' as default for backwards compatibility)
+    // Insert song
     const result = await client.query(
-      'INSERT INTO songs (title, artist, year, video_id, playlist, status) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [title, artist, year, video_id, 'modern', status || 'working']
+      'INSERT INTO songs (title, artist, year, video_id, status) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [title, artist, year, video_id, status || 'working']
     );
     
     const song = result.rows[0];
@@ -944,12 +944,9 @@ app.post('/api/game-logs', async (req, res) => {
       return res.status(400).json({ error: 'video_id required' });
     }
     
-    // Use category if provided, otherwise fall back to 'Modern' for backwards compatibility
-    const categoryValue = category || 'Modern';
-    
     await pool.query(
       'INSERT INTO game_logs (video_id, team_name, category, guessed_correctly, session_id, ip_address) VALUES ($1, $2, $3, $4, $5, $6)',
-      [video_id, team_name, categoryValue, guessed_correctly, session_id, getClientIp(req)]
+      [video_id, team_name, category || 'Modern', guessed_correctly, session_id, getClientIp(req)]
     );
     
     res.status(201).json({ message: 'Game log created' });
@@ -962,10 +959,7 @@ app.post('/api/game-logs', async (req, res) => {
 // Get game logs (admin only)
 app.get('/api/admin/game-logs', authenticateToken, async (req, res) => {
   try {
-    const { limit = 100, offset = 0, video_id, category, playlist, session_id } = req.query;
-    
-    // Support both 'category' and 'playlist' for backwards compatibility
-    const categoryFilter = category || playlist;
+    const { limit = 100, offset = 0, video_id, category, session_id } = req.query;
     
     let query = `
       SELECT gl.*, s.title, s.artist, s.year 
@@ -980,8 +974,8 @@ app.get('/api/admin/game-logs', authenticateToken, async (req, res) => {
       query += ` AND gl.video_id = $${params.length}`;
     }
     
-    if (categoryFilter) {
-      params.push(categoryFilter);
+    if (category) {
+      params.push(category);
       query += ` AND gl.category = $${params.length}`;
     }
     
@@ -1004,8 +998,8 @@ app.get('/api/admin/game-logs', authenticateToken, async (req, res) => {
       countQuery += ` AND video_id = $${countParams.length}`;
     }
     
-    if (categoryFilter) {
-      countParams.push(categoryFilter);
+    if (category) {
+      countParams.push(category);
       countQuery += ` AND category = $${countParams.length}`;
     }
     
