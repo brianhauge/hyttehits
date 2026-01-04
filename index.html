@@ -17,11 +17,46 @@
                 </div>
                 
                 <div id="team-setup">
-                    <div class="team-input">
-                        <label for="playlist-select">Playliste:</label>
-                        <select id="playlist-select">
-                            <option value="">Indlæser playlister...</option>
-                        </select>
+                    <div class="mode-selector">
+                        <label class="mode-option">
+                            <input type="radio" name="game-mode" value="playlist" checked>
+                            <span>Playliste</span>
+                        </label>
+                        <label class="mode-option">
+                            <input type="radio" name="game-mode" value="year-range">
+                            <span>Årsinterval</span>
+                        </label>
+                    </div>
+                    
+                    <div id="playlist-mode" class="mode-content">
+                        <div class="team-input">
+                            <label for="playlist-select">Vælg Playliste:</label>
+                            <select id="playlist-select">
+                                <option value="">Indlæser playlister...</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div id="year-range-mode" class="mode-content hidden">
+                        <div class="year-slider-container">
+                            <label>Vælg Årsinterval:</label>
+                            <div class="year-labels">
+                                <span id="year-start-label" class="year-label">...</span>
+                                <span id="year-song-count" class="year-song-count">0 sange</span>
+                                <span id="year-end-label" class="year-label">...</span>
+                            </div>
+                            <div class="year-slider-wrapper">
+                                <div class="year-slider-track" id="year-slider-track">
+                                    <div class="year-slider-range" id="year-slider-range"></div>
+                                    <div class="year-slider-handle year-slider-handle-min" id="year-handle-min" data-year="2000">
+                                        <span class="year-handle-tooltip">2000</span>
+                                    </div>
+                                    <div class="year-slider-handle year-slider-handle-max" id="year-handle-max" data-year="2025">
+                                        <span class="year-handle-tooltip">2025</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     
                     <h3>Holdnavne</h3>

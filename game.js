@@ -7,7 +7,10 @@ const gameState = {
     },
     currentSong: null,
     usedSongIds: new Set(),
+    gameMode: 'playlist', // 'playlist' or 'year-range'
     selectedPlaylist: 'Modern', // Playlist name (Modern, Classic, etc.)
+    yearStart: 2000,
+    yearEnd: 2025,
     sessionId: null // Session ID for tracking game plays
 };
 
@@ -26,11 +29,22 @@ const API_URL = '/api';
 
 // Song cache
 let songCache = {
-    playlists: {} // Will store songs by playlist name
+    playlists: {}, // Will store songs by playlist name
+    yearRange: [] // Will store songs for year range mode
 };
 
 // Available playlists
 let availablePlaylists = [];
+
+// Year range info from database
+let yearRangeInfo = {
+    min_year: 1960,
+    max_year: 2025,
+    total_songs: 0
+};
+
+// Song counts by year (for performance)
+let songCountsByYear = {};
 
 // Initialize game
 async function initGame() {
@@ -49,6 +63,26 @@ async function initGame() {
         console.error('Error loading playlists from API:', error);
         alert('Failed to load playlists. Please make sure the API server is running.');
         return;
+    }
+    
+    // Load year range info
+    try {
+        console.log('Loading year range info from API...');
+        await loadYearRangeInfo();
+        console.log(`Year range: ${yearRangeInfo.min_year}-${yearRangeInfo.max_year} (${yearRangeInfo.total_songs} songs)`);
+    } catch (error) {
+        console.error('Error loading year range info from API:', error);
+        // Continue with default values
+    }
+    
+    // Load song counts by year
+    try {
+        console.log('Loading song counts by year from API...');
+        await loadSongCountsByYear();
+        console.log(`Loaded song counts for ${Object.keys(songCountsByYear).length} years`);
+    } catch (error) {
+        console.error('Error loading song counts by year from API:', error);
+        // Continue without song counts
     }
     
     // Load songs from API
@@ -70,7 +104,203 @@ async function initGame() {
     document.getElementById('start-game').addEventListener('click', startGame);
     document.getElementById('continue-game').addEventListener('click', continueGame);
     document.getElementById('play-again').addEventListener('click', resetGame);
+    
+    // Setup mode selector listeners
+    const modeRadios = document.querySelectorAll('input[name="game-mode"]');
+    modeRadios.forEach(radio => {
+        radio.addEventListener('change', handleModeChange);
+    });
+    
+    // Setup year slider
+    initYearSlider();
+    
     console.log('Game initialized successfully!');
+}
+
+// Handle mode change between playlist and year-range
+function handleModeChange(event) {
+    const mode = event.target.value;
+    gameState.gameMode = mode;
+    
+    const playlistMode = document.getElementById('playlist-mode');
+    const yearRangeMode = document.getElementById('year-range-mode');
+    
+    if (mode === 'playlist') {
+        playlistMode.classList.remove('hidden');
+        yearRangeMode.classList.add('hidden');
+    } else {
+        playlistMode.classList.add('hidden');
+        yearRangeMode.classList.remove('hidden');
+    }
+}
+
+// Initialize year range slider with drag functionality
+function initYearSlider() {
+    const MIN_YEAR = yearRangeInfo.min_year;
+    const MAX_YEAR = yearRangeInfo.max_year;
+    
+    const track = document.getElementById('year-slider-track');
+    const range = document.getElementById('year-slider-range');
+    const handleMin = document.getElementById('year-handle-min');
+    const handleMax = document.getElementById('year-handle-max');
+    const labelMin = document.getElementById('year-start-label');
+    const labelMax = document.getElementById('year-end-label');
+    
+    // Set initial values from game state
+    handleMin.setAttribute('data-year', gameState.yearStart);
+    handleMax.setAttribute('data-year', gameState.yearEnd);
+    
+    let activeHandle = null;
+    let trackRect = null;
+    
+    // Update slider visual state
+    function updateSlider() {
+        const minYear = parseInt(handleMin.getAttribute('data-year'));
+        const maxYear = parseInt(handleMax.getAttribute('data-year'));
+        
+        // Calculate positions
+        const minPercent = ((minYear - MIN_YEAR) / (MAX_YEAR - MIN_YEAR)) * 100;
+        const maxPercent = ((maxYear - MIN_YEAR) / (MAX_YEAR - MIN_YEAR)) * 100;
+        
+        // Update handle positions
+        handleMin.style.left = minPercent + '%';
+        handleMax.style.left = maxPercent + '%';
+        
+        // Update range bar
+        range.style.left = minPercent + '%';
+        range.style.width = (maxPercent - minPercent) + '%';
+        
+        // Calculate song count for the selected range
+        let songCount = 0;
+        for (let year = minYear; year <= maxYear; year++) {
+            songCount += (songCountsByYear[year] || 0);
+        }
+        
+        // Update labels
+        labelMin.textContent = minYear;
+        labelMax.textContent = maxYear;
+        handleMin.querySelector('.year-handle-tooltip').textContent = minYear;
+        handleMax.querySelector('.year-handle-tooltip').textContent = maxYear;
+        
+        // Update song count label
+        const songCountLabel = document.getElementById('year-song-count');
+        songCountLabel.textContent = `${songCount} ${songCount === 1 ? 'sang' : 'sange'}`;
+        
+        // Update game state
+        gameState.yearStart = minYear;
+        gameState.yearEnd = maxYear;
+    }
+    
+    // Convert mouse position to year
+    function positionToYear(clientX) {
+        if (!trackRect) trackRect = track.getBoundingClientRect();
+        const position = (clientX - trackRect.left) / trackRect.width;
+        const year = Math.round(MIN_YEAR + position * (MAX_YEAR - MIN_YEAR));
+        return Math.max(MIN_YEAR, Math.min(MAX_YEAR, year));
+    }
+    
+    // Handle mouse/touch move
+    function handleMove(clientX) {
+        if (!activeHandle) return;
+        
+        const year = positionToYear(clientX);
+        const minYear = parseInt(handleMin.getAttribute('data-year'));
+        const maxYear = parseInt(handleMax.getAttribute('data-year'));
+        
+        if (activeHandle === handleMin) {
+            // Don't allow min to exceed max
+            if (year <= maxYear) {
+                handleMin.setAttribute('data-year', year);
+            }
+        } else {
+            // Don't allow max to go below min
+            if (year >= minYear) {
+                handleMax.setAttribute('data-year', year);
+            }
+        }
+        
+        updateSlider();
+    }
+    
+    // Mouse down on handles
+    function handleMouseDown(e, handle) {
+        e.preventDefault();
+        activeHandle = handle;
+        trackRect = track.getBoundingClientRect();
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+    }
+    
+    function onMouseMove(e) {
+        handleMove(e.clientX);
+    }
+    
+    function onMouseUp() {
+        activeHandle = null;
+        trackRect = null;
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+    }
+    
+    // Touch events for mobile
+    function handleTouchStart(e, handle) {
+        e.preventDefault();
+        activeHandle = handle;
+        trackRect = track.getBoundingClientRect();
+        document.addEventListener('touchmove', onTouchMove, { passive: false });
+        document.addEventListener('touchend', onTouchEnd);
+    }
+    
+    function onTouchMove(e) {
+        e.preventDefault();
+        if (e.touches.length > 0) {
+            handleMove(e.touches[0].clientX);
+        }
+    }
+    
+    function onTouchEnd() {
+        activeHandle = null;
+        trackRect = null;
+        document.removeEventListener('touchmove', onTouchMove);
+        document.removeEventListener('touchend', onTouchEnd);
+    }
+    
+    // Click on track to move nearest handle
+    track.addEventListener('click', (e) => {
+        if (e.target === handleMin || e.target === handleMax || 
+            e.target.classList.contains('year-handle-tooltip')) {
+            return;
+        }
+        
+        const year = positionToYear(e.clientX);
+        const minYear = parseInt(handleMin.getAttribute('data-year'));
+        const maxYear = parseInt(handleMax.getAttribute('data-year'));
+        
+        // Move the nearest handle
+        const distToMin = Math.abs(year - minYear);
+        const distToMax = Math.abs(year - maxYear);
+        
+        if (distToMin < distToMax) {
+            if (year <= maxYear) {
+                handleMin.setAttribute('data-year', year);
+            }
+        } else {
+            if (year >= minYear) {
+                handleMax.setAttribute('data-year', year);
+            }
+        }
+        
+        updateSlider();
+    });
+    
+    // Attach event listeners to handles
+    handleMin.addEventListener('mousedown', (e) => handleMouseDown(e, handleMin));
+    handleMax.addEventListener('mousedown', (e) => handleMouseDown(e, handleMax));
+    handleMin.addEventListener('touchstart', (e) => handleTouchStart(e, handleMin));
+    handleMax.addEventListener('touchstart', (e) => handleTouchStart(e, handleMax));
+    
+    // Initial update
+    updateSlider();
 }
 
 // Load playlists from API and populate selector
@@ -104,6 +334,49 @@ async function loadPlaylists() {
         
     } catch (error) {
         console.error('Error loading playlists:', error);
+        throw error;
+    }
+}
+
+// Load year range info from API
+async function loadYearRangeInfo() {
+    try {
+        const response = await fetch(`${API_URL}/songs/year-range-info`);
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch year range info from API');
+        }
+        
+        yearRangeInfo = await response.json();
+        
+        // Update default year range in game state to use the latest 25 years
+        const defaultStart = Math.max(yearRangeInfo.min_year, yearRangeInfo.max_year - 25);
+        gameState.yearStart = defaultStart;
+        gameState.yearEnd = yearRangeInfo.max_year;
+        
+        console.log('Year range info loaded:', yearRangeInfo);
+        
+    } catch (error) {
+        console.error('Error loading year range info:', error);
+        throw error;
+    }
+}
+
+// Load song counts by year from API
+async function loadSongCountsByYear() {
+    try {
+        const response = await fetch(`${API_URL}/songs/counts-by-year`);
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch song counts by year from API');
+        }
+        
+        songCountsByYear = await response.json();
+        
+        console.log('Song counts by year loaded:', Object.keys(songCountsByYear).length, 'years');
+        
+    } catch (error) {
+        console.error('Error loading song counts by year:', error);
         throw error;
     }
 }
@@ -148,24 +421,44 @@ async function loadSongs() {
 }
 
 // Start the game
-function startGame() {
+async function startGame() {
     try {
         const team1Name = document.getElementById('team1-name').value || 'Hold 1';
         const team2Name = document.getElementById('team2-name').value || 'Hold 2';
-        const playlistSelect = document.getElementById('playlist-select').value;
+        const gameMode = gameState.gameMode;
         
-        console.log('Starting game with:', { team1Name, team2Name, playlistSelect });
+        console.log('Starting game with mode:', gameMode);
         
         gameState.teams[1].name = team1Name;
         gameState.teams[2].name = team2Name;
-        gameState.selectedPlaylist = playlistSelect;
         
-        // Check if songs are loaded for this playlist
-        const selectedDatabase = songCache.playlists[playlistSelect] || [];
-        console.log(`Selected playlist: ${playlistSelect}, Available songs: ${selectedDatabase.length}`);
+        let selectedDatabase = [];
+        
+        if (gameMode === 'playlist') {
+            const playlistSelect = document.getElementById('playlist-select').value;
+            gameState.selectedPlaylist = playlistSelect;
+            selectedDatabase = songCache.playlists[playlistSelect] || [];
+            console.log(`Selected playlist: ${playlistSelect}, Available songs: ${selectedDatabase.length}`);
+        } else {
+            // Year range mode - fetch songs from API
+            console.log(`Fetching songs for year range: ${gameState.yearStart}-${gameState.yearEnd}`);
+            try {
+                const response = await fetch(`${API_URL}/songs/year-range?start=${gameState.yearStart}&end=${gameState.yearEnd}&status=working`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch songs by year range');
+                }
+                selectedDatabase = await response.json();
+                songCache.yearRange = selectedDatabase;
+                console.log(`Loaded ${selectedDatabase.length} songs for year range ${gameState.yearStart}-${gameState.yearEnd}`);
+            } catch (error) {
+                console.error('Error fetching songs by year range:', error);
+                alert('Kunne ikke hente sange for det valgte årsinterval. Prøv at genindlæse siden.');
+                return;
+            }
+        }
         
         if (selectedDatabase.length === 0) {
-            alert('Ingen sange tilgængelige for den valgte playliste. Prøv at genindlæse siden.');
+            alert('Ingen sange tilgængelige for det valgte interval. Vælg venligst et andet interval.');
             return;
         }
         
@@ -189,8 +482,14 @@ function startGame() {
 
 // Get a random song that hasn't been used
 function getRandomSong() {
-    // Select the appropriate database based on user's choice
-    const database = songCache.playlists[gameState.selectedPlaylist] || [];
+    let database = [];
+    
+    // Select the appropriate database based on game mode
+    if (gameState.gameMode === 'playlist') {
+        database = songCache.playlists[gameState.selectedPlaylist] || [];
+    } else {
+        database = songCache.yearRange || [];
+    }
     
     const availableSongs = database.filter(song => !gameState.usedSongIds.has(song.video_id));
     if (availableSongs.length === 0) {
@@ -374,7 +673,10 @@ function makeGuess(position) {
     
     // Log the game play
     const teamName = gameState.teams[currentTeam].name;
-    logGamePlay(song.video_id, teamName, gameState.selectedPlaylist, isCorrect);
+    const playlistOrYearRange = gameState.gameMode === 'playlist' 
+        ? gameState.selectedPlaylist 
+        : `${gameState.yearStart}-${gameState.yearEnd}`;
+    logGamePlay(song.video_id, teamName, playlistOrYearRange, isCorrect);
     
     // Show result
     showResult(isCorrect, position);

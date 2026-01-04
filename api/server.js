@@ -186,6 +186,57 @@ app.get('/api/playlists', async (req, res) => {
   }
 });
 
+// Get year range from database (public endpoint for game interface)
+app.get('/api/songs/year-range-info', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        MIN(year) as min_year, 
+        MAX(year) as max_year,
+        COUNT(*) as total_songs
+      FROM songs 
+      WHERE status = 'working'
+    `);
+    
+    if (result.rows.length === 0 || !result.rows[0].min_year) {
+      return res.json({ min_year: 1960, max_year: 2025, total_songs: 0 });
+    }
+    
+    res.json({
+      min_year: parseInt(result.rows[0].min_year),
+      max_year: parseInt(result.rows[0].max_year),
+      total_songs: parseInt(result.rows[0].total_songs)
+    });
+  } catch (err) {
+    console.error('Error fetching year range info:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get song counts by year (public endpoint for game interface)
+app.get('/api/songs/counts-by-year', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT year, COUNT(*) as count
+      FROM songs 
+      WHERE status = 'working'
+      GROUP BY year
+      ORDER BY year
+    `);
+    
+    // Convert to object for easy lookup
+    const countsByYear = {};
+    result.rows.forEach(row => {
+      countsByYear[row.year] = parseInt(row.count);
+    });
+    
+    res.json(countsByYear);
+  } catch (err) {
+    console.error('Error fetching song counts by year:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // ============================================
 // PUBLIC SONG ROUTES
 // ============================================
@@ -230,6 +281,57 @@ app.get('/api/songs', async (req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error('Error fetching songs:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get songs by year range
+app.get('/api/songs/year-range', async (req, res) => {
+  try {
+    const { start, end, status } = req.query;
+    
+    if (!start || !end) {
+      return res.status(400).json({ error: 'Start and end year parameters required' });
+    }
+    
+    const startYear = parseInt(start);
+    const endYear = parseInt(end);
+    
+    if (isNaN(startYear) || isNaN(endYear)) {
+      return res.status(400).json({ error: 'Invalid year parameters' });
+    }
+    
+    if (startYear > endYear) {
+      return res.status(400).json({ error: 'Start year must be less than or equal to end year' });
+    }
+    
+    let query = `
+      SELECT s.*, 
+        COALESCE(
+          json_agg(
+            json_build_object('id', c.id, 'name', c.name) 
+            ORDER BY c.name
+          ) FILTER (WHERE c.id IS NOT NULL), 
+          '[]'
+        ) as playlists
+      FROM songs s
+      LEFT JOIN song_playlists sc ON s.id = sc.song_id
+      LEFT JOIN playlists c ON sc.playlist_id = c.id
+      WHERE s.year >= $1 AND s.year <= $2
+    `;
+    const params = [startYear, endYear];
+    
+    if (status) {
+      params.push(status);
+      query += ` AND s.status = $${params.length}`;
+    }
+    
+    query += ' GROUP BY s.id ORDER BY s.year, s.title';
+    
+    const result = await pool.query(query, params);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching songs by year range:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
