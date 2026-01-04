@@ -7,7 +7,7 @@ const gameState = {
     },
     currentSong: null,
     usedSongIds: new Set(),
-    gameMode: 'playlist', // 'playlist' or 'year-range'
+    gameMode: 'year-range', // 'playlist' or 'year-range'
     selectedPlaylist: 'Modern', // Playlist name (Modern, Classic, etc.)
     yearStart: 2000,
     yearEnd: 2025,
