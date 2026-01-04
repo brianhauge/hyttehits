@@ -14,8 +14,8 @@ RUN npm install --production
 # Copy application files
 COPY api/ ./
 
-# Copy songs data SQL file
-COPY songs-data.sql ./songs-data.sql
+# Copy songs data CSV file
+COPY songs-data.csv ./songs-data.csv
 
 # Expose port
 EXPOSE 3000

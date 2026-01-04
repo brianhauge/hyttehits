@@ -12,12 +12,91 @@ async function populateDatabase() {
   try {
     console.log('Starting database population...');
     
-    // Read the SQL file
-    const sqlFilePath = path.join(__dirname, 'songs-data.sql');
-    const sql = fs.readFileSync(sqlFilePath, 'utf8');
+    // Read the CSV file
+    const csvFilePath = path.join(__dirname, 'songs-data.csv');
+    const csvContent = fs.readFileSync(csvFilePath, 'utf8');
     
-    // Execute the SQL
-    await client.query(sql);
+    // Parse CSV (skip header row)
+    const lines = csvContent.trim().split('\n');
+    const songs = [];
+    
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+      
+      // Parse CSV line with quoted fields
+      const fields = [];
+      let current = '';
+      let inQuotes = false;
+      
+      for (let j = 0; j < line.length; j++) {
+        const char = line[j];
+        const nextChar = line[j + 1];
+        
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          fields.push(current.trim());
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      fields.push(current.trim()); // Push the last field
+      
+      if (fields.length >= 5) {
+        const title = fields[0];
+        const artist = fields[1];
+        const year = parseInt(fields[2]);
+        const video_id = fields[3];
+        const status = fields[4];
+        
+        if (!isNaN(year)) {
+          songs.push({ title, artist, year, video_id, status });
+        } else {
+          console.log(`Skipping row ${i}: Invalid year "${fields[2]}" from fields:`, fields);
+        }
+      }
+    }
+    
+    console.log(`Parsed ${songs.length} songs from CSV`);
+    
+    // Insert songs in batches
+    let inserted = 0;
+    for (const song of songs) {
+      try {
+        await client.query(
+          'INSERT INTO songs (title, artist, year, video_id, status) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (video_id) DO NOTHING',
+          [song.title, song.artist, song.year, song.video_id, song.status]
+        );
+        inserted++;
+      } catch (err) {
+        console.error(`Failed to insert song:`, song);
+        console.error('Error:', err.message);
+      }
+    }
+    console.log(`Inserted ${inserted} songs`);
+    
+    // Assign songs to playlists based on year
+    // Modern: 2016-2025
+    await client.query(`
+      INSERT INTO song_playlists (song_id, playlist_id)
+      SELECT s.id, c.id
+      FROM songs s
+      CROSS JOIN playlists c
+      WHERE c.name = 'Modern' AND s.year >= 2016
+      ON CONFLICT DO NOTHING
+    `);
+    
+    // Classic: 1952-2015
+    await client.query(`
+      INSERT INTO song_playlists (song_id, playlist_id)
+      SELECT s.id, c.id
+      FROM songs s
+      CROSS JOIN playlists c
+      WHERE c.name = 'Classic' AND s.year < 2016
+      ON CONFLICT DO NOTHING
+    `);
     
     // Get counts by playlist
     const modernResult = await client.query(`
