@@ -19,19 +19,19 @@ async function populateDatabase() {
     // Execute the SQL
     await client.query(sql);
     
-    // Get counts by category
+    // Get counts by playlist
     const modernResult = await client.query(`
       SELECT COUNT(DISTINCT s.id) 
       FROM songs s 
-      JOIN song_categories sc ON s.id = sc.song_id 
-      JOIN categories c ON sc.category_id = c.id 
+      JOIN song_playlists sc ON s.id = sc.song_id 
+      JOIN playlists c ON sc.playlist_id = c.id 
       WHERE c.name = $1
     `, ['Modern']);
     const classicResult = await client.query(`
       SELECT COUNT(DISTINCT s.id) 
       FROM songs s 
-      JOIN song_categories sc ON s.id = sc.song_id 
-      JOIN categories c ON sc.category_id = c.id 
+      JOIN song_playlists sc ON s.id = sc.song_id 
+      JOIN playlists c ON sc.playlist_id = c.id 
       WHERE c.name = $1
     `, ['Classic']);
     const totalResult = await client.query('SELECT COUNT(*) FROM songs');

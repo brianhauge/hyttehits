@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS game_logs (
     id SERIAL PRIMARY KEY,
     video_id VARCHAR(50) NOT NULL REFERENCES songs(video_id) ON DELETE CASCADE,
     team_name VARCHAR(100), -- Team that played the song
-    category VARCHAR(50) NOT NULL, -- Category name (e.g., 'Modern', 'Classic')
+    playlist VARCHAR(50) NOT NULL, -- Playlist name (e.g., 'Modern', 'Classic')
     guessed_correctly BOOLEAN, -- Whether the guess was correct
     session_id VARCHAR(255), -- Browser session ID
     ip_address VARCHAR(45), -- IPv4 or IPv6
@@ -86,32 +86,32 @@ CREATE TABLE IF NOT EXISTS game_logs (
 
 -- Create indexes for game logs
 CREATE INDEX idx_game_logs_video_id ON game_logs(video_id);
-CREATE INDEX idx_game_logs_category ON game_logs(category);
+CREATE INDEX idx_game_logs_playlist ON game_logs(playlist);
 CREATE INDEX idx_game_logs_created_at ON game_logs(created_at);
 CREATE INDEX idx_game_logs_session_id ON game_logs(session_id);
 
--- Create categories table
-CREATE TABLE IF NOT EXISTS categories (
+-- Create playlists table
+CREATE TABLE IF NOT EXISTS playlists (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE,
     description TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create song_categories junction table (many-to-many relationship)
-CREATE TABLE IF NOT EXISTS song_categories (
+-- Create song_playlists junction table (many-to-many relationship)
+CREATE TABLE IF NOT EXISTS song_playlists (
     song_id INTEGER NOT NULL REFERENCES songs(id) ON DELETE CASCADE,
-    category_id INTEGER NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
+    playlist_id INTEGER NOT NULL REFERENCES playlists(id) ON DELETE CASCADE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (song_id, category_id)
+    PRIMARY KEY (song_id, playlist_id)
 );
 
--- Create indexes for song_categories
-CREATE INDEX idx_song_categories_song_id ON song_categories(song_id);
-CREATE INDEX idx_song_categories_category_id ON song_categories(category_id);
+-- Create indexes for song_playlists
+CREATE INDEX idx_song_playlists_song_id ON song_playlists(song_id);
+CREATE INDEX idx_song_playlists_playlist_id ON song_playlists(playlist_id);
 
--- Insert default categories
-INSERT INTO categories (name, description) VALUES
+-- Insert default playlists
+INSERT INTO playlists (name, description) VALUES
     ('Modern', 'Modern songs (2016-2025)'),
     ('Classic', 'Classic songs (1952-2025)')
 ON CONFLICT (name) DO NOTHING;

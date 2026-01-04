@@ -1,5 +1,5 @@
 -- Song data for Hytte Hits game
--- This file contains all songs for both Modern and Classic categories
+-- This file contains all songs for both Modern and Classic playlists
 
 -- Modern songs (2016-2025)
 INSERT INTO songs (title, artist, year, video_id, status) VALUES
@@ -432,19 +432,19 @@ INSERT INTO songs (title, artist, year, video_id, status) VALUES
 
 ON CONFLICT (video_id) DO NOTHING;
 
--- Assign songs to categories based on year
+-- Assign songs to playlists based on year
 -- Modern: 2016-2025
-INSERT INTO song_categories (song_id, category_id)
+INSERT INTO song_playlists (song_id, playlist_id)
 SELECT s.id, c.id
 FROM songs s
-CROSS JOIN categories c
+CROSS JOIN playlists c
 WHERE c.name = 'Modern' AND s.year >= 2016
 ON CONFLICT DO NOTHING;
 
 -- Classic: 1952-2015
-INSERT INTO song_categories (song_id, category_id)
+INSERT INTO song_playlists (song_id, playlist_id)
 SELECT s.id, c.id
 FROM songs s
-CROSS JOIN categories c
+CROSS JOIN playlists c
 WHERE c.name = 'Classic' AND s.year < 2016
 ON CONFLICT DO NOTHING;

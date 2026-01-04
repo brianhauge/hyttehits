@@ -104,7 +104,7 @@ function showAdmin() {
     document.getElementById('adminScreen').classList.remove('hidden');
     loadAllSongs();
     loadStats();
-    loadCategoriesForForms();
+    loadPlaylistsForForms();
 }
 
 function showMessage(elementId, message, type = 'success') {
@@ -142,8 +142,8 @@ function switchTab(tabName) {
     } else if (tabName === 'game') {
         loadGameLogs();
         loadGameStats();
-    } else if (tabName === 'categories') {
-        loadCategories();
+    } else if (tabName === 'playlists') {
+        loadPlaylists();
     }
 }
 
@@ -189,26 +189,26 @@ document.getElementById('searchInput').addEventListener('input', (e) => {
 
 // Load All Songs
 let allSongs = [];
-let categoriesForForms = [];
+let playlistsForForms = [];
 
-async function loadCategoriesForForms() {
+async function loadPlaylistsForForms() {
     try {
-        const data = await apiRequest('/admin/categories');
-        categoriesForForms = data;
-        populateCategoryCheckboxes();
+        const data = await apiRequest('/admin/playlists');
+        playlistsForForms = data;
+        populatePlaylistCheckboxes();
     } catch (error) {
-        console.error('Error loading categories for forms:', error);
+        console.error('Error loading playlists for forms:', error);
     }
 }
 
-function populateCategoryCheckboxes() {
-    const addContainer = document.getElementById('addCategoriesCheckboxes');
-    const editContainer = document.getElementById('editCategoriesCheckboxes');
+function populatePlaylistCheckboxes() {
+    const addContainer = document.getElementById('addPlaylistsCheckboxes');
+    const editContainer = document.getElementById('editPlaylistsCheckboxes');
     
-    const checkboxHTML = categoriesForForms.map(cat => `
+    const checkboxHTML = playlistsForForms.map(cat => `
         <div style="margin-bottom: 8px;">
             <label style="display: flex; align-items: center; cursor: pointer;">
-                <input type="checkbox" name="category" value="${cat.id}" style="margin-right: 8px;">
+                <input type="checkbox" name="playlist" value="${cat.id}" style="margin-right: 8px;">
                 <span>${escapeHtml(cat.name)}${cat.description ? ` - ${escapeHtml(cat.description)}` : ''}</span>
             </label>
         </div>
@@ -239,12 +239,12 @@ function displaySongs(songs) {
     }
     
     tbody.innerHTML = songs.map(song => {
-        // Format categories
-        let categoriesText = '';
-        if (song.categories && Array.isArray(song.categories) && song.categories.length > 0) {
-            categoriesText = song.categories.map(c => c.name).join(', ');
+        // Format playlists
+        let playlistsText = '';
+        if (song.playlists && Array.isArray(song.playlists) && song.playlists.length > 0) {
+            playlistsText = song.playlists.map(c => c.name).join(', ');
         } else {
-            categoriesText = '-';
+            playlistsText = '-';
         }
         
         return `
@@ -252,7 +252,7 @@ function displaySongs(songs) {
             <td>${escapeHtml(song.video_id)}</td>
             <td>${escapeHtml(song.title)}</td>
             <td>${escapeHtml(song.artist)}</td>
-            <td>${escapeHtml(categoriesText)}</td>
+            <td>${escapeHtml(playlistsText)}</td>
             <td><span class="status-badge status-${song.status || 'unknown'}">${song.status || 'unknown'}</span></td>
             <td>${song.last_checked ? new Date(song.last_checked).toLocaleString() : 'Never'}</td>
             <td class="action-btns">
@@ -277,14 +277,14 @@ function editSong(videoId) {
     document.getElementById('editYear').value = song.year;
     
     // Uncheck all checkboxes first
-    document.querySelectorAll('#editCategoriesCheckboxes input[type="checkbox"]').forEach(cb => {
+    document.querySelectorAll('#editPlaylistsCheckboxes input[type="checkbox"]').forEach(cb => {
         cb.checked = false;
     });
     
-    // Check the categories that belong to this song
-    if (song.categories && Array.isArray(song.categories)) {
-        song.categories.forEach(cat => {
-            const checkbox = document.querySelector(`#editCategoriesCheckboxes input[value="${cat.id}"]`);
+    // Check the playlists that belong to this song
+    if (song.playlists && Array.isArray(song.playlists)) {
+        song.playlists.forEach(cat => {
+            const checkbox = document.querySelector(`#editPlaylistsCheckboxes input[value="${cat.id}"]`);
             if (checkbox) checkbox.checked = true;
         });
     }
@@ -298,13 +298,13 @@ document.getElementById('editSongForm').addEventListener('submit', async (e) => 
     
     const originalVideoId = document.getElementById('editOriginalVideoId').value;
     
-    // Get selected categories
-    const selectedCategories = Array.from(
-        document.querySelectorAll('#editCategoriesCheckboxes input[type="checkbox"]:checked')
+    // Get selected playlists
+    const selectedPlaylists = Array.from(
+        document.querySelectorAll('#editPlaylistsCheckboxes input[type="checkbox"]:checked')
     ).map(cb => parseInt(cb.value));
     
-    if (selectedCategories.length === 0) {
-        showMessage('editSongMessage', 'Please select at least one category', 'error');
+    if (selectedPlaylists.length === 0) {
+        showMessage('editSongMessage', 'Please select at least one playlist', 'error');
         return;
     }
     
@@ -314,7 +314,7 @@ document.getElementById('editSongForm').addEventListener('submit', async (e) => 
         artist: document.getElementById('editArtist').value,
         year: parseInt(document.getElementById('editYear').value),
         status: 'working',
-        categories: selectedCategories
+        playlists: selectedPlaylists
     };
     
     try {
@@ -354,7 +354,7 @@ document.querySelectorAll('.modal-close').forEach(btn => {
     btn.addEventListener('click', () => {
         document.getElementById('editModal').classList.add('hidden');
         document.getElementById('userModal').classList.add('hidden');
-        document.getElementById('categoryModal').classList.add('hidden');
+        document.getElementById('playlistModal').classList.add('hidden');
     });
 });
 
@@ -377,13 +377,13 @@ async function deleteSong(videoId) {
 document.getElementById('addSongForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     
-    // Get selected categories
-    const selectedCategories = Array.from(
-        document.querySelectorAll('#addCategoriesCheckboxes input[type="checkbox"]:checked')
+    // Get selected playlists
+    const selectedPlaylists = Array.from(
+        document.querySelectorAll('#addPlaylistsCheckboxes input[type="checkbox"]:checked')
     ).map(cb => parseInt(cb.value));
     
-    if (selectedCategories.length === 0) {
-        showMessage('addSongMessage', 'Please select at least one category', 'error');
+    if (selectedPlaylists.length === 0) {
+        showMessage('addSongMessage', 'Please select at least one playlist', 'error');
         return;
     }
     
@@ -392,7 +392,7 @@ document.getElementById('addSongForm').addEventListener('submit', async (e) => {
         title: document.getElementById('addTitle').value,
         artist: document.getElementById('addArtist').value,
         year: parseInt(document.getElementById('addYear').value),
-        categories: selectedCategories
+        playlists: selectedPlaylists
     };
     
     try {
@@ -404,8 +404,8 @@ document.getElementById('addSongForm').addEventListener('submit', async (e) => {
         showMessage('addSongMessage', 'Song added successfully!', 'success');
         document.getElementById('addSongForm').reset();
         
-        // Uncheck all category checkboxes
-        document.querySelectorAll('#addCategoriesCheckboxes input[type="checkbox"]').forEach(cb => {
+        // Uncheck all playlist checkboxes
+        document.querySelectorAll('#addPlaylistsCheckboxes input[type="checkbox"]').forEach(cb => {
             cb.checked = false;
         });
         
@@ -492,12 +492,12 @@ function displayBrokenSongs(songs) {
     }
     
     tbody.innerHTML = songs.map(song => {
-        // Format categories
-        let categoriesText = '';
-        if (song.categories && Array.isArray(song.categories) && song.categories.length > 0) {
-            categoriesText = song.categories.map(c => c.name).join(', ');
+        // Format playlists
+        let playlistsText = '';
+        if (song.playlists && Array.isArray(song.playlists) && song.playlists.length > 0) {
+            playlistsText = song.playlists.map(c => c.name).join(', ');
         } else {
-            categoriesText = '-';
+            playlistsText = '-';
         }
         
         return `
@@ -505,7 +505,7 @@ function displayBrokenSongs(songs) {
             <td>${escapeHtml(song.video_id)}</td>
             <td>${escapeHtml(song.title)}</td>
             <td>${escapeHtml(song.artist)}</td>
-            <td>${escapeHtml(categoriesText)}</td>
+            <td>${escapeHtml(playlistsText)}</td>
             <td>${song.last_checked ? new Date(song.last_checked).toLocaleString() : 'Never'}</td>
             <td class="action-btns">
                 <button class="btn btn-success" onclick="findAlternative('${song.video_id}')">Find Alternative</button>
@@ -863,10 +863,10 @@ const gameLimit = 50;
 
 async function loadGameLogs() {
     try {
-        const category = document.getElementById('gameCategoryFilter').value;
+        const playlist = document.getElementById('gamePlaylistFilter').value;
         
         let url = `/admin/game-logs?limit=${gameLimit}&offset=${gamePage * gameLimit}`;
-        if (category) url += `&category=${category}`;
+        if (playlist) url += `&playlist=${playlist}`;
         
         const data = await apiRequest(url);
         displayGameLogs(data);
@@ -882,8 +882,8 @@ async function loadGameStats() {
         const stats = await apiRequest('/admin/game-stats');
         
         document.getElementById('gameTotalPlays').textContent = stats.totalPlays || 0;
-        document.getElementById('gameModernPlays').textContent = stats.byCategory?.Modern || 0;
-        document.getElementById('gameClassicPlays').textContent = stats.byCategory?.Classic || 0;
+        document.getElementById('gameModernPlays').textContent = stats.byPlaylist?.Modern || 0;
+        document.getElementById('gameClassicPlays').textContent = stats.byPlaylist?.Classic || 0;
         document.getElementById('gameSuccessRate').textContent = stats.successRate ? 
             `${stats.successRate.percentage}%` : '0%';
         
@@ -918,7 +918,7 @@ function displayGameLogs(data) {
             <td>${escapeHtml(log.title)}</td>
             <td>${escapeHtml(log.artist)}</td>
             <td>${escapeHtml(log.team_name || 'N/A')}</td>
-            <td>${escapeHtml(log.category)}</td>
+            <td>${escapeHtml(log.playlist)}</td>
             <td>${log.guessed_correctly === null ? 'N/A' : (log.guessed_correctly ? '✓' : '✗')}</td>
         </tr>
     `).join('');
@@ -934,7 +934,7 @@ document.getElementById('refreshGameBtn').addEventListener('click', () => {
     loadGameStats();
 });
 
-document.getElementById('gameCategoryFilter').addEventListener('change', () => {
+document.getElementById('gamePlaylistFilter').addEventListener('change', () => {
     gamePage = 0;
     loadGameLogs();
 });
@@ -952,123 +952,123 @@ document.getElementById('gameNextBtn').addEventListener('click', () => {
 });
 
 // ============================================
-// CATEGORY MANAGEMENT
+// PLAYLIST MANAGEMENT
 // ============================================
 
-let allCategories = [];
+let allPlaylists = [];
 
-async function loadCategories() {
+async function loadPlaylists() {
     try {
-        const data = await apiRequest('/admin/categories');
-        allCategories = data;
-        displayCategories(allCategories);
+        const data = await apiRequest('/admin/playlists');
+        allPlaylists = data;
+        displayPlaylists(allPlaylists);
     } catch (error) {
-        console.error('Error loading categories:', error);
-        document.getElementById('categoriesTableBody').innerHTML = 
-            `<tr><td colspan="6" class="loading">Error loading categories: ${error.message}</td></tr>`;
+        console.error('Error loading playlists:', error);
+        document.getElementById('playlistsTableBody').innerHTML = 
+            `<tr><td colspan="6" class="loading">Error loading playlists: ${error.message}</td></tr>`;
     }
 }
 
-function displayCategories(categories) {
-    const tbody = document.getElementById('categoriesTableBody');
+function displayPlaylists(playlists) {
+    const tbody = document.getElementById('playlistsTableBody');
     
-    if (categories.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="loading">No categories found</td></tr>';
+    if (playlists.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="loading">No playlists found</td></tr>';
         return;
     }
     
-    tbody.innerHTML = categories.map(category => `
+    tbody.innerHTML = playlists.map(playlist => `
         <tr>
-            <td>${category.id}</td>
-            <td>${escapeHtml(category.name)}</td>
-            <td>${escapeHtml(category.description || '')}</td>
-            <td>${category.song_count}</td>
-            <td>${new Date(category.created_at).toLocaleString()}</td>
+            <td>${playlist.id}</td>
+            <td>${escapeHtml(playlist.name)}</td>
+            <td>${escapeHtml(playlist.description || '')}</td>
+            <td>${playlist.song_count}</td>
+            <td>${new Date(playlist.created_at).toLocaleString()}</td>
             <td class="action-btns">
-                <button class="btn btn-secondary" onclick="editCategory(${category.id})">Edit</button>
-                <button class="btn btn-danger" onclick="deleteCategory(${category.id})">Delete</button>
+                <button class="btn btn-secondary" onclick="editPlaylist(${playlist.id})">Edit</button>
+                <button class="btn btn-danger" onclick="deletePlaylist(${playlist.id})">Delete</button>
             </td>
         </tr>
     `).join('');
 }
 
-// Add Category Button
-document.getElementById('addCategoryBtn').addEventListener('click', () => {
-    document.getElementById('categoryModalTitle').textContent = 'Add Category';
-    document.getElementById('categoryId').value = '';
-    document.getElementById('categoryName').value = '';
-    document.getElementById('categoryDescription').value = '';
-    document.getElementById('categoryModal').classList.remove('hidden');
+// Add Playlist Button
+document.getElementById('addPlaylistBtn').addEventListener('click', () => {
+    document.getElementById('playlistModalTitle').textContent = 'Add Playlist';
+    document.getElementById('playlistId').value = '';
+    document.getElementById('playlistName').value = '';
+    document.getElementById('playlistDescription').value = '';
+    document.getElementById('playlistModal').classList.remove('hidden');
 });
 
-// Edit Category
-function editCategory(id) {
-    const category = allCategories.find(c => c.id === id);
-    if (!category) return;
+// Edit Playlist
+function editPlaylist(id) {
+    const playlist = allPlaylists.find(c => c.id === id);
+    if (!playlist) return;
     
-    document.getElementById('categoryModalTitle').textContent = 'Edit Category';
-    document.getElementById('categoryId').value = category.id;
-    document.getElementById('categoryName').value = category.name;
-    document.getElementById('categoryDescription').value = category.description || '';
-    document.getElementById('categoryModal').classList.remove('hidden');
+    document.getElementById('playlistModalTitle').textContent = 'Edit Playlist';
+    document.getElementById('playlistId').value = playlist.id;
+    document.getElementById('playlistName').value = playlist.name;
+    document.getElementById('playlistDescription').value = playlist.description || '';
+    document.getElementById('playlistModal').classList.remove('hidden');
 }
 
-// Delete Category
-async function deleteCategory(id) {
-    const category = allCategories.find(c => c.id === id);
-    if (!category) return;
+// Delete Playlist
+async function deletePlaylist(id) {
+    const playlist = allPlaylists.find(c => c.id === id);
+    if (!playlist) return;
     
-    if (parseInt(category.song_count) > 0) {
-        alert(`Cannot delete category "${category.name}" because it has ${category.song_count} songs associated with it. Remove songs from this category first.`);
+    if (parseInt(playlist.song_count) > 0) {
+        alert(`Cannot delete playlist "${playlist.name}" because it has ${playlist.song_count} songs associated with it. Remove songs from this playlist first.`);
         return;
     }
     
-    if (!confirm(`Are you sure you want to delete category "${category.name}"?`)) {
+    if (!confirm(`Are you sure you want to delete playlist "${playlist.name}"?`)) {
         return;
     }
     
     try {
-        await apiRequest(`/admin/categories/${id}`, { method: 'DELETE' });
-        alert('Category deleted successfully!');
-        loadCategories();
+        await apiRequest(`/admin/playlists/${id}`, { method: 'DELETE' });
+        alert('Playlist deleted successfully!');
+        loadPlaylists();
     } catch (error) {
-        alert(`Error deleting category: ${error.message}`);
+        alert(`Error deleting playlist: ${error.message}`);
     }
 }
 
-// Category Form Submit
-document.getElementById('categoryForm').addEventListener('submit', async (e) => {
+// Playlist Form Submit
+document.getElementById('playlistForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     
-    const categoryId = document.getElementById('categoryId').value;
+    const playlistId = document.getElementById('playlistId').value;
     const formData = {
-        name: document.getElementById('categoryName').value,
-        description: document.getElementById('categoryDescription').value
+        name: document.getElementById('playlistName').value,
+        description: document.getElementById('playlistDescription').value
     };
     
     try {
-        if (categoryId) {
+        if (playlistId) {
             // Update
-            await apiRequest(`/admin/categories/${categoryId}`, {
+            await apiRequest(`/admin/playlists/${playlistId}`, {
                 method: 'PUT',
                 body: JSON.stringify(formData)
             });
-            showMessage('categoryMessage', 'Category updated successfully!', 'success');
+            showMessage('playlistMessage', 'Playlist updated successfully!', 'success');
         } else {
             // Create
-            await apiRequest('/admin/categories', {
+            await apiRequest('/admin/playlists', {
                 method: 'POST',
                 body: JSON.stringify(formData)
             });
-            showMessage('categoryMessage', 'Category created successfully!', 'success');
+            showMessage('playlistMessage', 'Playlist created successfully!', 'success');
         }
         
         setTimeout(() => {
-            document.getElementById('categoryModal').classList.add('hidden');
-            loadCategories();
+            document.getElementById('playlistModal').classList.add('hidden');
+            loadPlaylists();
         }, 1500);
     } catch (error) {
-        showMessage('categoryMessage', error.message, 'error');
+        showMessage('playlistMessage', error.message, 'error');
     }
 });
 

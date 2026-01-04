@@ -39,7 +39,7 @@
         <nav class="tabs">
             <button class="tab-btn active" data-tab="songs">All Songs</button>
             <button class="tab-btn" data-tab="add">Add Song</button>
-            <button class="tab-btn" data-tab="categories">Categories</button>
+            <button class="tab-btn" data-tab="playlists">Playlists</button>
             <button class="tab-btn" data-tab="broken">Broken Songs</button>
             <button class="tab-btn" data-tab="users">Users</button>
             <button class="tab-btn" data-tab="audit">Audit Logs</button>
@@ -70,7 +70,7 @@
                                 <th>Video ID</th>
                                 <th>Title</th>
                                 <th>Artist</th>
-                                <th>Category</th>
+                                <th>Playlist</th>
                                 <th>Status</th>
                                 <th>Last Checked</th>
                                 <th>Actions</th>
@@ -107,8 +107,8 @@
                         <input type="number" id="addYear" name="year" required min="1900" max="2100">
                     </div>
                     <div class="form-group">
-                        <label>Categories * (select at least one)</label>
-                        <div id="addCategoriesCheckboxes" style="margin-top: 10px;">
+                        <label>Playlists * (select at least one)</label>
+                        <div id="addPlaylistsCheckboxes" style="margin-top: 10px;">
                             <!-- Checkboxes will be dynamically loaded -->
                         </div>
                     </div>
@@ -120,14 +120,14 @@
                 </form>
             </div>
 
-            <!-- Categories Tab -->
-            <div id="categoriesTab" class="tab-content">
+            <!-- Playlists Tab -->
+            <div id="playlistsTab" class="tab-content">
                 <div class="tab-header">
-                    <h2>Categories Management</h2>
-                    <button id="addCategoryBtn" class="btn btn-primary">Add Category</button>
+                    <h2>Playlists Management</h2>
+                    <button id="addPlaylistBtn" class="btn btn-primary">Add Playlist</button>
                 </div>
                 <div class="table-container">
-                    <table id="categoriesTable">
+                    <table id="playlistsTable">
                         <thead>
                             <tr>
                                 <th>ID</th>
@@ -138,8 +138,8 @@
                                 <th>Actions</th>
                             </tr>
                         </thead>
-                        <tbody id="categoriesTableBody">
-                            <tr><td colspan="6" class="loading">Loading categories...</td></tr>
+                        <tbody id="playlistsTableBody">
+                            <tr><td colspan="6" class="loading">Loading playlists...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -158,7 +158,7 @@
                                 <th>Video ID</th>
                                 <th>Title</th>
                                 <th>Artist</th>
-                                <th>Category</th>
+                                <th>Playlist</th>
                                 <th>Last Checked</th>
                                 <th>Actions</th>
                             </tr>
@@ -281,8 +281,8 @@
                 <div class="tab-header">
                     <h2>Game Logs</h2>
                     <div class="actions">
-                        <select id="gameCategoryFilter">
-                            <option value="">All Categories</option>
+                        <select id="gamePlaylistFilter">
+                            <option value="">All Playlists</option>
                             <option value="Modern">Modern</option>
                             <option value="Classic">Classic</option>
                         </select>
@@ -332,7 +332,7 @@
                                 <th>Song</th>
                                 <th>Artist</th>
                                 <th>Team</th>
-                                <th>Category</th>
+                                <th>Playlist</th>
                                 <th>Correct?</th>
                             </tr>
                         </thead>
@@ -411,8 +411,8 @@
                     <input type="number" id="editYear" name="year" required min="1900" max="2100">
                 </div>
                 <div class="form-group">
-                    <label>Categories *</label>
-                    <div id="editCategoriesCheckboxes" style="margin-top: 10px;">
+                    <label>Playlists *</label>
+                    <div id="editPlaylistsCheckboxes" style="margin-top: 10px;">
                         <!-- Checkboxes will be dynamically loaded -->
                     </div>
                 </div>
@@ -458,28 +458,28 @@
         </div>
     </div>
 
-    <!-- Add/Edit Category Modal -->
-    <div id="categoryModal" class="modal hidden">
+    <!-- Add/Edit Playlist Modal -->
+    <div id="playlistModal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 id="categoryModalTitle">Add Category</h2>
+                <h2 id="playlistModalTitle">Add Playlist</h2>
                 <button class="modal-close">&times;</button>
             </div>
-            <form id="categoryForm" class="song-form">
-                <input type="hidden" id="categoryId">
+            <form id="playlistForm" class="song-form">
+                <input type="hidden" id="playlistId">
                 <div class="form-group">
-                    <label for="categoryName">Name *</label>
-                    <input type="text" id="categoryName" name="name" required>
+                    <label for="playlistName">Name *</label>
+                    <input type="text" id="playlistName" name="name" required>
                 </div>
                 <div class="form-group">
-                    <label for="categoryDescription">Description</label>
-                    <textarea id="categoryDescription" name="description" rows="3"></textarea>
+                    <label for="playlistDescription">Description</label>
+                    <textarea id="playlistDescription" name="description" rows="3"></textarea>
                 </div>
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary">Save</button>
                     <button type="button" class="btn btn-secondary modal-close">Cancel</button>
                 </div>
-                <div id="categoryMessage" class="message"></div>
+                <div id="playlistMessage" class="message"></div>
             </form>
         </div>
     </div>

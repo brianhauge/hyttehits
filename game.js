@@ -7,7 +7,7 @@ const gameState = {
     },
     currentSong: null,
     usedSongIds: new Set(),
-    selectedCategory: 'Modern', // Category name (Modern, Classic, etc.)
+    selectedPlaylist: 'Modern', // Playlist name (Modern, Classic, etc.)
     sessionId: null // Session ID for tracking game plays
 };
 
@@ -26,11 +26,11 @@ const API_URL = '/api';
 
 // Song cache
 let songCache = {
-    categories: {} // Will store songs by category name
+    playlists: {} // Will store songs by playlist name
 };
 
-// Available categories
-let availableCategories = [];
+// Available playlists
+let availablePlaylists = [];
 
 // Initialize game
 async function initGame() {
@@ -40,14 +40,14 @@ async function initGame() {
     gameState.sessionId = getSessionId();
     console.log('Session ID:', gameState.sessionId);
     
-    // Load categories first
+    // Load playlists first
     try {
-        console.log('Loading categories from API...');
-        await loadCategories();
-        console.log(`Loaded ${availableCategories.length} categories`);
+        console.log('Loading playlists from API...');
+        await loadPlaylists();
+        console.log(`Loaded ${availablePlaylists.length} playlists`);
     } catch (error) {
-        console.error('Error loading categories from API:', error);
-        alert('Failed to load categories. Please make sure the API server is running.');
+        console.error('Error loading playlists from API:', error);
+        alert('Failed to load playlists. Please make sure the API server is running.');
         return;
     }
     
@@ -55,10 +55,10 @@ async function initGame() {
     try {
         console.log('Loading songs from API...');
         await loadSongs();
-        const categoryCounts = Object.keys(songCache.categories).map(cat => 
-            `${cat}: ${songCache.categories[cat].length}`
+        const playlistCounts = Object.keys(songCache.playlists).map(cat => 
+            `${cat}: ${songCache.playlists[cat].length}`
         ).join(', ');
-        console.log(`Loaded songs from database - ${categoryCounts}`);
+        console.log(`Loaded songs from database - ${playlistCounts}`);
     } catch (error) {
         console.error('Error loading songs from API:', error);
         alert('Failed to load songs. Please make sure the API server is running.');
@@ -73,37 +73,37 @@ async function initGame() {
     console.log('Game initialized successfully!');
 }
 
-// Load categories from API and populate selector
-async function loadCategories() {
+// Load playlists from API and populate selector
+async function loadPlaylists() {
     try {
-        const response = await fetch(`${API_URL}/categories`);
+        const response = await fetch(`${API_URL}/playlists`);
         
         if (!response.ok) {
-            throw new Error('Failed to fetch categories from API');
+            throw new Error('Failed to fetch playlists from API');
         }
         
-        availableCategories = await response.json();
+        availablePlaylists = await response.json();
         
-        // Populate category selector
-        const categorySelect = document.getElementById('category-select');
-        categorySelect.innerHTML = '';
+        // Populate playlist selector
+        const playlistSelect = document.getElementById('playlist-select');
+        playlistSelect.innerHTML = '';
         
-        availableCategories.forEach(category => {
+        availablePlaylists.forEach(playlist => {
             const option = document.createElement('option');
-            option.value = category.name;
-            option.textContent = `${category.name}${category.description ? ' - ' + category.description : ''} (${category.song_count} sange)`;
-            categorySelect.appendChild(option);
+            option.value = playlist.name;
+            option.textContent = `${playlist.name}${playlist.description ? ' - ' + playlist.description : ''} (${playlist.song_count} sange)`;
+            playlistSelect.appendChild(option);
         });
         
-        // Set first category as default
-        if (availableCategories.length > 0) {
-            gameState.selectedCategory = availableCategories[0].name;
+        // Set first playlist as default
+        if (availablePlaylists.length > 0) {
+            gameState.selectedPlaylist = availablePlaylists[0].name;
         }
         
-        console.log('Categories loaded:', availableCategories.map(c => `${c.name} (${c.song_count} songs)`).join(', '));
+        console.log('Playlists loaded:', availablePlaylists.map(c => `${c.name} (${c.song_count} songs)`).join(', '));
         
     } catch (error) {
-        console.error('Error loading categories:', error);
+        console.error('Error loading playlists:', error);
         throw error;
     }
 }
@@ -111,34 +111,34 @@ async function loadCategories() {
 // Load songs from API
 async function loadSongs() {
     try {
-        // Get all categories first
-        const categoriesResponse = await fetch(`${API_URL}/songs?status=working`);
+        // Get all playlists first
+        const playlistsResponse = await fetch(`${API_URL}/songs?status=working`);
         
-        if (!categoriesResponse.ok) {
+        if (!playlistsResponse.ok) {
             throw new Error('Failed to fetch songs from API');
         }
         
-        const allSongs = await categoriesResponse.json();
+        const allSongs = await playlistsResponse.json();
         
-        // Organize songs by category
-        songCache.categories = {};
+        // Organize songs by playlist
+        songCache.playlists = {};
         
         allSongs.forEach(song => {
-            if (song.categories && Array.isArray(song.categories)) {
-                song.categories.forEach(category => {
-                    if (!songCache.categories[category.name]) {
-                        songCache.categories[category.name] = [];
+            if (song.playlists && Array.isArray(song.playlists)) {
+                song.playlists.forEach(playlist => {
+                    if (!songCache.playlists[playlist.name]) {
+                        songCache.playlists[playlist.name] = [];
                     }
-                    // Only add if not already in this category
-                    if (!songCache.categories[category.name].find(s => s.video_id === song.video_id)) {
-                        songCache.categories[category.name].push(song);
+                    // Only add if not already in this playlist
+                    if (!songCache.playlists[playlist.name].find(s => s.video_id === song.video_id)) {
+                        songCache.playlists[playlist.name].push(song);
                     }
                 });
             }
         });
         
-        console.log('Loaded songs by category:', Object.keys(songCache.categories).map(cat => 
-            `${cat}: ${songCache.categories[cat].length} songs`
+        console.log('Loaded songs by playlist:', Object.keys(songCache.playlists).map(cat => 
+            `${cat}: ${songCache.playlists[cat].length} songs`
         ).join(', '));
         
     } catch (error) {
@@ -152,20 +152,20 @@ function startGame() {
     try {
         const team1Name = document.getElementById('team1-name').value || 'Hold 1';
         const team2Name = document.getElementById('team2-name').value || 'Hold 2';
-        const categorySelect = document.getElementById('category-select').value;
+        const playlistSelect = document.getElementById('playlist-select').value;
         
-        console.log('Starting game with:', { team1Name, team2Name, categorySelect });
+        console.log('Starting game with:', { team1Name, team2Name, playlistSelect });
         
         gameState.teams[1].name = team1Name;
         gameState.teams[2].name = team2Name;
-        gameState.selectedCategory = categorySelect;
+        gameState.selectedPlaylist = playlistSelect;
         
-        // Check if songs are loaded for this category
-        const selectedDatabase = songCache.categories[categorySelect] || [];
-        console.log(`Selected category: ${categorySelect}, Available songs: ${selectedDatabase.length}`);
+        // Check if songs are loaded for this playlist
+        const selectedDatabase = songCache.playlists[playlistSelect] || [];
+        console.log(`Selected playlist: ${playlistSelect}, Available songs: ${selectedDatabase.length}`);
         
         if (selectedDatabase.length === 0) {
-            alert('Ingen sange tilgængelige for den valgte kategori. Prøv at genindlæse siden.');
+            alert('Ingen sange tilgængelige for den valgte playliste. Prøv at genindlæse siden.');
             return;
         }
         
@@ -190,7 +190,7 @@ function startGame() {
 // Get a random song that hasn't been used
 function getRandomSong() {
     // Select the appropriate database based on user's choice
-    const database = songCache.categories[gameState.selectedCategory] || [];
+    const database = songCache.playlists[gameState.selectedPlaylist] || [];
     
     const availableSongs = database.filter(song => !gameState.usedSongIds.has(song.video_id));
     if (availableSongs.length === 0) {
@@ -260,7 +260,7 @@ async function markSongAsBroken(videoId) {
 }
 
 // Log game play to database
-async function logGamePlay(videoId, teamName, category, guessedCorrectly) {
+async function logGamePlay(videoId, teamName, playlist, guessedCorrectly) {
     try {
         await fetch(`${API_URL}/game-logs`, {
             method: 'POST',
@@ -270,7 +270,7 @@ async function logGamePlay(videoId, teamName, category, guessedCorrectly) {
             body: JSON.stringify({
                 video_id: videoId,
                 team_name: teamName,
-                category: category,
+                playlist: playlist,
                 guessed_correctly: guessedCorrectly,
                 session_id: gameState.sessionId
             })
@@ -374,7 +374,7 @@ function makeGuess(position) {
     
     // Log the game play
     const teamName = gameState.teams[currentTeam].name;
-    logGamePlay(song.video_id, teamName, gameState.selectedCategory, isCorrect);
+    logGamePlay(song.video_id, teamName, gameState.selectedPlaylist, isCorrect);
     
     // Show result
     showResult(isCorrect, position);

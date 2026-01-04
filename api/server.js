@@ -167,13 +167,13 @@ app.get('/api/auth/verify', authenticateToken, (req, res) => {
 // PUBLIC ROUTES
 // ============================================
 
-// Get all categories (public endpoint for game interface)
-app.get('/api/categories', async (req, res) => {
+// Get all playlists (public endpoint for game interface)
+app.get('/api/playlists', async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT c.id, c.name, c.description, COUNT(sc.song_id) as song_count
-      FROM categories c
-      LEFT JOIN song_categories sc ON c.id = sc.category_id
+      FROM playlists c
+      LEFT JOIN song_playlists sc ON c.id = sc.playlist_id
       LEFT JOIN songs s ON sc.song_id = s.id AND s.status = 'working'
       GROUP BY c.id
       HAVING COUNT(sc.song_id) > 0
@@ -181,7 +181,7 @@ app.get('/api/categories', async (req, res) => {
     `);
     res.json(result.rows);
   } catch (err) {
-    console.error('Error fetching categories:', err);
+    console.error('Error fetching playlists:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -190,10 +190,10 @@ app.get('/api/categories', async (req, res) => {
 // PUBLIC SONG ROUTES
 // ============================================
 
-// Get all songs with categories
+// Get all songs with playlists
 app.get('/api/songs', async (req, res) => {
   try {
-    const { status, category } = req.query;
+    const { status, playlist } = req.query;
     let query = `
       SELECT s.*, 
         COALESCE(
@@ -202,10 +202,10 @@ app.get('/api/songs', async (req, res) => {
             ORDER BY c.name
           ) FILTER (WHERE c.id IS NOT NULL), 
           '[]'
-        ) as categories
+        ) as playlists
       FROM songs s
-      LEFT JOIN song_categories sc ON s.id = sc.song_id
-      LEFT JOIN categories c ON sc.category_id = c.id
+      LEFT JOIN song_playlists sc ON s.id = sc.song_id
+      LEFT JOIN playlists c ON sc.playlist_id = c.id
       WHERE 1=1
     `;
     const params = [];
@@ -215,11 +215,11 @@ app.get('/api/songs', async (req, res) => {
       query += ` AND s.status = $${params.length}`;
     }
     
-    if (category) {
-      params.push(category);
+    if (playlist) {
+      params.push(playlist);
       query += ` AND EXISTS (
-        SELECT 1 FROM song_categories sc2 
-        JOIN categories c2 ON sc2.category_id = c2.id 
+        SELECT 1 FROM song_playlists sc2 
+        JOIN playlists c2 ON sc2.playlist_id = c2.id 
         WHERE sc2.song_id = s.id AND c2.name = $${params.length}
       )`;
     }
@@ -237,7 +237,7 @@ app.get('/api/songs', async (req, res) => {
 // Get a random song
 app.get('/api/songs/random', async (req, res) => {
   try {
-    const { category, exclude } = req.query;
+    const { playlist, exclude } = req.query;
     let query = `
       SELECT s.*, 
         COALESCE(
@@ -246,19 +246,19 @@ app.get('/api/songs/random', async (req, res) => {
             ORDER BY c.name
           ) FILTER (WHERE c.id IS NOT NULL), 
           '[]'
-        ) as categories
+        ) as playlists
       FROM songs s
-      LEFT JOIN song_categories sc ON s.id = sc.song_id
-      LEFT JOIN categories c ON sc.category_id = c.id
+      LEFT JOIN song_playlists sc ON s.id = sc.song_id
+      LEFT JOIN playlists c ON sc.playlist_id = c.id
       WHERE s.status = $1
     `;
     const params = ['working'];
     
-    if (category) {
-      params.push(category);
+    if (playlist) {
+      params.push(playlist);
       query += ` AND EXISTS (
-        SELECT 1 FROM song_categories sc2 
-        JOIN categories c2 ON sc2.category_id = c2.id 
+        SELECT 1 FROM song_playlists sc2 
+        JOIN playlists c2 ON sc2.playlist_id = c2.id 
         WHERE sc2.song_id = s.id AND c2.name = $${params.length}
       )`;
     }
@@ -338,7 +338,7 @@ app.put('/api/admin/songs/:videoId', authenticateToken, async (req, res) => {
     await client.query('BEGIN');
     
     const { videoId } = req.params;
-    const { title, artist, year, video_id, status, categories } = req.body;
+    const { title, artist, year, video_id, status, playlists } = req.body;
     
     // Update song
     const result = await client.query(
@@ -353,16 +353,16 @@ app.put('/api/admin/songs/:videoId', authenticateToken, async (req, res) => {
     
     const song = result.rows[0];
     
-    // Update categories if provided
-    if (categories && Array.isArray(categories)) {
-      // Delete existing categories
-      await client.query('DELETE FROM song_categories WHERE song_id = $1', [song.id]);
+    // Update playlists if provided
+    if (playlists && Array.isArray(playlists)) {
+      // Delete existing playlists
+      await client.query('DELETE FROM song_playlists WHERE song_id = $1', [song.id]);
       
-      // Insert new categories
-      for (const categoryId of categories) {
+      // Insert new playlists
+      for (const playlistId of playlists) {
         await client.query(
-          'INSERT INTO song_categories (song_id, category_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
-          [song.id, categoryId]
+          'INSERT INTO song_playlists (song_id, playlist_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+          [song.id, playlistId]
         );
       }
     }
@@ -372,7 +372,7 @@ app.put('/api/admin/songs/:videoId', authenticateToken, async (req, res) => {
     // Log audit
     await logAudit(req.user.user_id, 'update', 'song', video_id, { oldVideoId: videoId, newData: req.body }, getClientIp(req));
     
-    // Fetch updated song with categories
+    // Fetch updated song with playlists
     const updatedResult = await pool.query(`
       SELECT s.*, 
         COALESCE(
@@ -381,10 +381,10 @@ app.put('/api/admin/songs/:videoId', authenticateToken, async (req, res) => {
             ORDER BY c.name
           ) FILTER (WHERE c.id IS NOT NULL), 
           '[]'
-        ) as categories
+        ) as playlists
       FROM songs s
-      LEFT JOIN song_categories sc ON s.id = sc.song_id
-      LEFT JOIN categories c ON sc.category_id = c.id
+      LEFT JOIN song_playlists sc ON s.id = sc.song_id
+      LEFT JOIN playlists c ON sc.playlist_id = c.id
       WHERE s.video_id = $1
       GROUP BY s.id
     `, [video_id]);
@@ -409,16 +409,16 @@ app.post('/api/admin/songs', authenticateToken, async (req, res) => {
   try {
     await client.query('BEGIN');
     
-    const { title, artist, year, video_id, status, categories } = req.body;
+    const { title, artist, year, video_id, status, playlists } = req.body;
     
     if (!title || !artist || !year || !video_id) {
       await client.query('ROLLBACK');
       return res.status(400).json({ error: 'Missing required fields: title, artist, year, video_id' });
     }
     
-    if (!categories || !Array.isArray(categories) || categories.length === 0) {
+    if (!playlists || !Array.isArray(playlists) || playlists.length === 0) {
       await client.query('ROLLBACK');
-      return res.status(400).json({ error: 'At least one category is required' });
+      return res.status(400).json({ error: 'At least one playlist is required' });
     }
     
     // Insert song
@@ -429,20 +429,20 @@ app.post('/api/admin/songs', authenticateToken, async (req, res) => {
     
     const song = result.rows[0];
     
-    // Insert categories
-    for (const categoryId of categories) {
+    // Insert playlists
+    for (const playlistId of playlists) {
       await client.query(
-        'INSERT INTO song_categories (song_id, category_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
-        [song.id, categoryId]
+        'INSERT INTO song_playlists (song_id, playlist_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+        [song.id, playlistId]
       );
     }
     
     await client.query('COMMIT');
     
     // Log audit
-    await logAudit(req.user.user_id, 'create', 'song', video_id, { title, artist, year, categories }, getClientIp(req));
+    await logAudit(req.user.user_id, 'create', 'song', video_id, { title, artist, year, playlists }, getClientIp(req));
     
-    // Fetch created song with categories
+    // Fetch created song with playlists
     const createdResult = await pool.query(`
       SELECT s.*, 
         COALESCE(
@@ -451,10 +451,10 @@ app.post('/api/admin/songs', authenticateToken, async (req, res) => {
             ORDER BY c.name
           ) FILTER (WHERE c.id IS NOT NULL), 
           '[]'
-        ) as categories
+        ) as playlists
       FROM songs s
-      LEFT JOIN song_categories sc ON s.id = sc.song_id
-      LEFT JOIN categories c ON sc.category_id = c.id
+      LEFT JOIN song_playlists sc ON s.id = sc.song_id
+      LEFT JOIN playlists c ON sc.playlist_id = c.id
       WHERE s.video_id = $1
       GROUP BY s.id
     `, [video_id]);
@@ -557,11 +557,11 @@ app.get('/api/admin/stats', authenticateToken, async (req, res) => {
       FROM songs
     `);
     
-    // Get stats by category
-    const categoryStats = await pool.query(`
+    // Get stats by playlist
+    const playlistStats = await pool.query(`
       SELECT c.name, COUNT(sc.song_id) as count
-      FROM categories c
-      LEFT JOIN song_categories sc ON c.id = sc.category_id
+      FROM playlists c
+      LEFT JOIN song_playlists sc ON c.id = sc.playlist_id
       GROUP BY c.id, c.name
       ORDER BY c.name
     `);
@@ -570,16 +570,16 @@ app.get('/api/admin/stats', authenticateToken, async (req, res) => {
       total: parseInt(overallStats.rows[0].total),
       working: parseInt(overallStats.rows[0].working),
       broken: parseInt(overallStats.rows[0].broken),
-      byCategory: {}
+      byPlaylist: {}
     };
     
-    categoryStats.rows.forEach(row => {
-      stats.byCategory[row.name.toLowerCase()] = parseInt(row.count);
+    playlistStats.rows.forEach(row => {
+      stats.byPlaylist[row.name.toLowerCase()] = parseInt(row.count);
     });
     
     // Keep modern/classic for backwards compatibility
-    stats.modern = stats.byCategory.modern || 0;
-    stats.classic = stats.byCategory.classic || 0;
+    stats.modern = stats.byPlaylist.modern || 0;
+    stats.classic = stats.byPlaylist.classic || 0;
     
     res.json(stats);
   } catch (err) {
@@ -676,10 +676,10 @@ app.get('/api/admin/songs/broken', authenticateToken, async (req, res) => {
             ORDER BY c.name
           ) FILTER (WHERE c.id IS NOT NULL), 
           '[]'
-        ) as categories
+        ) as playlists
       FROM songs s
-      LEFT JOIN song_categories sc ON s.id = sc.song_id
-      LEFT JOIN categories c ON sc.category_id = c.id
+      LEFT JOIN song_playlists sc ON s.id = sc.song_id
+      LEFT JOIN playlists c ON sc.playlist_id = c.id
       WHERE s.status = 'broken'
       GROUP BY s.id
       ORDER BY s.year
@@ -692,116 +692,116 @@ app.get('/api/admin/songs/broken', authenticateToken, async (req, res) => {
 });
 
 // ============================================
-// CATEGORY MANAGEMENT ROUTES
+// PLAYLIST MANAGEMENT ROUTES
 // ============================================
 
-// Get all categories
-app.get('/api/admin/categories', authenticateToken, async (req, res) => {
+// Get all playlists
+app.get('/api/admin/playlists', authenticateToken, async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT c.*, COUNT(sc.song_id) as song_count
-      FROM categories c
-      LEFT JOIN song_categories sc ON c.id = sc.category_id
+      FROM playlists c
+      LEFT JOIN song_playlists sc ON c.id = sc.playlist_id
       GROUP BY c.id
       ORDER BY c.name
     `);
     res.json(result.rows);
   } catch (err) {
-    console.error('Error fetching categories:', err);
+    console.error('Error fetching playlists:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// Create a new category
-app.post('/api/admin/categories', authenticateToken, async (req, res) => {
+// Create a new playlist
+app.post('/api/admin/playlists', authenticateToken, async (req, res) => {
   try {
     const { name, description } = req.body;
     
     if (!name) {
-      return res.status(400).json({ error: 'Category name required' });
+      return res.status(400).json({ error: 'Playlist name required' });
     }
     
     const result = await pool.query(
-      'INSERT INTO categories (name, description) VALUES ($1, $2) RETURNING *',
+      'INSERT INTO playlists (name, description) VALUES ($1, $2) RETURNING *',
       [name, description || null]
     );
     
     // Log audit
-    await logAudit(req.user.user_id, 'create', 'category', result.rows[0].id, { name, description }, getClientIp(req));
+    await logAudit(req.user.user_id, 'create', 'playlist', result.rows[0].id, { name, description }, getClientIp(req));
     
     res.status(201).json(result.rows[0]);
   } catch (err) {
-    console.error('Error creating category:', err);
+    console.error('Error creating playlist:', err);
     if (err.code === '23505') {
-      res.status(409).json({ error: 'Category with this name already exists' });
+      res.status(409).json({ error: 'Playlist with this name already exists' });
     } else {
       res.status(500).json({ error: 'Internal server error' });
     }
   }
 });
 
-// Update a category
-app.put('/api/admin/categories/:id', authenticateToken, async (req, res) => {
+// Update a playlist
+app.put('/api/admin/playlists/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { name, description } = req.body;
     
     if (!name) {
-      return res.status(400).json({ error: 'Category name required' });
+      return res.status(400).json({ error: 'Playlist name required' });
     }
     
     const result = await pool.query(
-      'UPDATE categories SET name = $1, description = $2 WHERE id = $3 RETURNING *',
+      'UPDATE playlists SET name = $1, description = $2 WHERE id = $3 RETURNING *',
       [name, description || null, id]
     );
     
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Category not found' });
+      return res.status(404).json({ error: 'Playlist not found' });
     }
     
     // Log audit
-    await logAudit(req.user.user_id, 'update', 'category', id, { name, description }, getClientIp(req));
+    await logAudit(req.user.user_id, 'update', 'playlist', id, { name, description }, getClientIp(req));
     
     res.json(result.rows[0]);
   } catch (err) {
-    console.error('Error updating category:', err);
+    console.error('Error updating playlist:', err);
     if (err.code === '23505') {
-      res.status(409).json({ error: 'Category with this name already exists' });
+      res.status(409).json({ error: 'Playlist with this name already exists' });
     } else {
       res.status(500).json({ error: 'Internal server error' });
     }
   }
 });
 
-// Delete a category
-app.delete('/api/admin/categories/:id', authenticateToken, async (req, res) => {
+// Delete a playlist
+app.delete('/api/admin/playlists/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Check if category has songs
+    // Check if playlist has songs
     const checkResult = await pool.query(
-      'SELECT COUNT(*) FROM song_categories WHERE category_id = $1',
+      'SELECT COUNT(*) FROM song_playlists WHERE playlist_id = $1',
       [id]
     );
     
     if (parseInt(checkResult.rows[0].count) > 0) {
       return res.status(400).json({ 
-        error: 'Cannot delete category with associated songs. Remove songs from this category first.' 
+        error: 'Cannot delete playlist with associated songs. Remove songs from this playlist first.' 
       });
     }
     
-    const result = await pool.query('DELETE FROM categories WHERE id = $1 RETURNING *', [id]);
+    const result = await pool.query('DELETE FROM playlists WHERE id = $1 RETURNING *', [id]);
     
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Category not found' });
+      return res.status(404).json({ error: 'Playlist not found' });
     }
     
     // Log audit
-    await logAudit(req.user.user_id, 'delete', 'category', id, { name: result.rows[0].name }, getClientIp(req));
+    await logAudit(req.user.user_id, 'delete', 'playlist', id, { name: result.rows[0].name }, getClientIp(req));
     
-    res.json({ message: 'Category deleted successfully' });
+    res.json({ message: 'Playlist deleted successfully' });
   } catch (err) {
-    console.error('Error deleting category:', err);
+    console.error('Error deleting playlist:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -1003,15 +1003,15 @@ app.get('/api/admin/audit-logs', authenticateToken, async (req, res) => {
 // Log a song play (public endpoint)
 app.post('/api/game-logs', async (req, res) => {
   try {
-    const { video_id, team_name, category, guessed_correctly, session_id } = req.body;
+    const { video_id, team_name, playlist, guessed_correctly, session_id } = req.body;
     
     if (!video_id) {
       return res.status(400).json({ error: 'video_id required' });
     }
     
     await pool.query(
-      'INSERT INTO game_logs (video_id, team_name, category, guessed_correctly, session_id, ip_address) VALUES ($1, $2, $3, $4, $5, $6)',
-      [video_id, team_name, category || 'Modern', guessed_correctly, session_id, getClientIp(req)]
+      'INSERT INTO game_logs (video_id, team_name, playlist, guessed_correctly, session_id, ip_address) VALUES ($1, $2, $3, $4, $5, $6)',
+      [video_id, team_name, playlist || 'Modern', guessed_correctly, session_id, getClientIp(req)]
     );
     
     res.status(201).json({ message: 'Game log created' });
@@ -1024,7 +1024,7 @@ app.post('/api/game-logs', async (req, res) => {
 // Get game logs (admin only)
 app.get('/api/admin/game-logs', authenticateToken, async (req, res) => {
   try {
-    const { limit = 100, offset = 0, video_id, category, session_id } = req.query;
+    const { limit = 100, offset = 0, video_id, playlist, session_id } = req.query;
     
     let query = `
       SELECT gl.*, s.title, s.artist, s.year 
@@ -1039,9 +1039,9 @@ app.get('/api/admin/game-logs', authenticateToken, async (req, res) => {
       query += ` AND gl.video_id = $${params.length}`;
     }
     
-    if (category) {
-      params.push(category);
-      query += ` AND gl.category = $${params.length}`;
+    if (playlist) {
+      params.push(playlist);
+      query += ` AND gl.playlist = $${params.length}`;
     }
     
     if (session_id) {
@@ -1063,9 +1063,9 @@ app.get('/api/admin/game-logs', authenticateToken, async (req, res) => {
       countQuery += ` AND video_id = $${countParams.length}`;
     }
     
-    if (category) {
-      countParams.push(category);
-      countQuery += ` AND category = $${countParams.length}`;
+    if (playlist) {
+      countParams.push(playlist);
+      countQuery += ` AND playlist = $${countParams.length}`;
     }
     
     if (session_id) {
@@ -1096,13 +1096,13 @@ app.get('/api/admin/game-stats', authenticateToken, async (req, res) => {
     const totalResult = await pool.query('SELECT COUNT(*) FROM game_logs');
     stats.totalPlays = parseInt(totalResult.rows[0].count);
     
-    // Plays by category
-    const categoryResult = await pool.query(
-      'SELECT category, COUNT(*) as count FROM game_logs GROUP BY category'
+    // Plays by playlist
+    const playlistResult = await pool.query(
+      'SELECT playlist, COUNT(*) as count FROM game_logs GROUP BY playlist'
     );
-    stats.byCategory = {};
-    categoryResult.rows.forEach(row => {
-      stats.byCategory[row.category] = parseInt(row.count);
+    stats.byPlaylist = {};
+    playlistResult.rows.forEach(row => {
+      stats.byPlaylist[row.playlist] = parseInt(row.count);
     });
     
     // Most played songs

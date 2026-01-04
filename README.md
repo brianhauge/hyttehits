@@ -6,8 +6,8 @@ A web-based implementation of the Hytte Hits music party game with YouTube integ
 
 - Two-team gameplay
 - YouTube integration for playing real music
-- PostgreSQL database with 388 songs from Modern (2016-2025) and Classic (1952-2025) categories
-- **Dynamic category system** - categories are loaded from the database and can be managed through the admin panel
+- PostgreSQL database with 388 songs from Modern (2016-2025) and Classic (1952-2025) playlists
+- **Dynamic playlist system** - playlists are loaded from the database and can be managed through the admin panel
 - Automatic song status tracking (working/broken)
 - Interactive timeline showing guessed years in ascending order
 - Guess if a song was released before, between, or after existing years
@@ -15,7 +15,7 @@ A web-based implementation of the Hytte Hits music party game with YouTube integ
 - Responsive design
 - RESTful API for song management
 - **Admin panel with:**
-  - Category management (create, edit, delete categories)
+  - Playlist management (create, edit, delete playlists)
   - User administration (create, edit, delete admin users)
   - Song management (add, edit, delete, bulk check, find alternatives)
   - Audit logging (track all admin actions)
@@ -73,7 +73,7 @@ A web-based implementation of the Hytte Hits music party game with YouTube integ
 5. **Play the game**
    - Open your browser and go to `http://localhost:8081`
    - Enter team names
-   - Select a category from the dropdown (dynamically loaded from database)
+   - Select a playlist from the dropdown (dynamically loaded from database)
    - Click "Start Game"
    - Enjoy!
 
@@ -81,8 +81,8 @@ A web-based implementation of the Hytte Hits music party game with YouTube integ
    - Go to `http://localhost:8081/admin`
    - Login with your admin credentials
    - Manage songs (add, edit, delete, check availability, find alternatives)
-   - Manage categories (create, edit, delete)
-   - Categories you create will automatically appear in the game selector
+   - Manage playlists (create, edit, delete)
+   - Playlists you create will automatically appear in the game selector
 
 ### Development Setup
 
@@ -96,8 +96,8 @@ DATABASE_URL=postgresql://hyttehits:hyttehits123@localhost:5432/hyttehits npm st
 
 ## How to Play
 
-1. **Setup**: Two teams enter their names and select a category (dynamically loaded from the database)
-2. **Play a Song**: The current team hears a random track from the selected category
+1. **Setup**: Two teams enter their names and select a playlist (dynamically loaded from the database)
+2. **Play a Song**: The current team hears a random track from the selected playlist
 3. **Make a Guess**: The team guesses where the song belongs in their timeline:
    - Before all existing years
    - Between two years
@@ -108,26 +108,26 @@ DATABASE_URL=postgresql://hyttehits:hyttehits123@localhost:5432/hyttehits npm st
 5. **Switch Teams**: Play alternates between teams
 6. **Win**: First team to correctly place 10 songs in chronological order wins!
 
-## Category System
+## Playlist System
 
-Hytte Hits uses a flexible category system that allows you to organize songs in any way you want:
+Hytte Hits uses a flexible playlist system that allows you to organize songs in any way you want:
 
-- **Dynamic Categories**: Categories are loaded from the database, not hardcoded
-- **Create Custom Categories**: Use the admin panel to create categories like "80s Hits", "Danish Songs", "Rock Classics", etc.
-- **Multiple Categories per Song**: Songs can belong to multiple categories simultaneously
-- **Automatic Game Integration**: Any category you create will automatically appear in the game's category selector
-- **Default Categories**: The system comes with two default categories:
+- **Dynamic Playlists**: Playlists are loaded from the database, not hardcoded
+- **Create Custom Playlists**: Use the admin panel to create playlists like "80s Hits", "Danish Songs", "Rock Classics", etc.
+- **Multiple Playlists per Song**: Songs can belong to multiple playlists simultaneously
+- **Automatic Game Integration**: Any playlist you create will automatically appear in the game's playlist selector
+- **Default Playlists**: The system comes with two default playlists:
   - **Modern** (2016-2025): 136 contemporary songs
   - **Classic** (1952-2025): 252 timeless classics
 
-### Creating New Categories
+### Creating New Playlists
 
 1. Go to the admin panel at `http://localhost:8081/admin`
-2. Click the "Categories" tab
-3. Click "Create New Category"
+2. Click the "Playlists" tab
+3. Click "Create New Playlist"
 4. Enter a name and optional description
-5. The category will immediately appear in the game selector
-6. Add songs to your new category through the "Add Song" or "All Songs" tabs
+5. The playlist will immediately appear in the game selector
+6. Add songs to your new playlist through the "Add Song" or "All Songs" tabs
 
 ## Database Schema
 
@@ -140,7 +140,7 @@ Hytte Hits uses a flexible category system that allows you to organize songs in 
 | artist       | VARCHAR   | Artist name                           |
 | year         | INTEGER   | Release year                          |
 | video_id     | VARCHAR   | YouTube video ID (unique)             |
-| category     | VARCHAR   | Category name (e.g., Modern, Classic)        |
+| playlist     | VARCHAR   | Playlist name (e.g., Modern, Classic)        |
 | status       | VARCHAR   | Song status (working/broken)          |
 | last_checked | TIMESTAMP | Last time status was checked          |
 | created_at   | TIMESTAMP | Record creation time                  |
@@ -187,7 +187,7 @@ Hytte Hits uses a flexible category system that allows you to organize songs in 
 | id                | SERIAL    | Primary key                           |
 | video_id          | VARCHAR   | Foreign key to songs table            |
 | team_name         | VARCHAR   | Team that played the song             |
-| category          | VARCHAR   | Category name (e.g., Modern, Classic)        |
+| playlist          | VARCHAR   | Playlist name (e.g., Modern, Classic)        |
 | guessed_correctly | BOOLEAN   | Whether the guess was correct         |
 | session_id        | VARCHAR   | Browser session ID                    |
 | ip_address        | VARCHAR   | Client IP address (IPv4/IPv6)         |
@@ -206,21 +206,21 @@ Hytte Hits uses a flexible category system that allows you to organize songs in 
 #### All Songs Tab
 - View all songs in the database
 - Search and filter songs
-- Edit song details (title, artist, categories, video ID)
+- Edit song details (title, artist, playlists, video ID)
 - Delete songs
 - Check all songs for YouTube availability (bulk operation)
 
-#### Categories Tab
-- View all categories with song counts
-- Create new categories (e.g., "80s Hits", "Danish Songs")
-- Edit category names and descriptions
-- Delete categories (protected - cannot delete categories with songs)
-- **Categories automatically appear in the game selector**
+#### Playlists Tab
+- View all playlists with song counts
+- Create new playlists (e.g., "80s Hits", "Danish Songs")
+- Edit playlist names and descriptions
+- Delete playlists (protected - cannot delete playlists with songs)
+- **Playlists automatically appear in the game selector**
 
 #### Add Song Tab
 - Add new songs to the database
 - Required fields: YouTube Video ID, Title, Artist
-- Select one or more categories for each song
+- Select one or more playlists for each song
 - Automatic validation
 
 #### Broken Songs Tab
@@ -248,11 +248,11 @@ Hytte Hits uses a flexible category system that allows you to organize songs in 
 #### Game Logs Tab
 - View game play statistics
 - Total plays count
-- Plays by category (Modern/Classic)
+- Plays by playlist (Modern/Classic)
 - Success rate (percentage of correct guesses)
 - Most played songs leaderboard
 - Recent game plays log
-- Filter by category
+- Filter by playlist
 - Pagination support (50 records per page)
 - Track which team played each song
 - See guess results (correct/incorrect)
@@ -260,7 +260,7 @@ Hytte Hits uses a flexible category system that allows you to organize songs in 
 #### Statistics Tab
 - View database statistics in real-time
 - Total songs count
-- Songs by category (Modern/Classic)
+- Songs by playlist (Modern/Classic)
 - Working vs Broken songs count
 - Unchecked songs count
 
@@ -284,9 +284,9 @@ Note: The script will prevent duplicate usernames and enforce minimum password l
 
 ### Public Endpoints
 
-#### Get All Categories
+#### Get All Playlists
 ```
-GET /api/categories
+GET /api/playlists
 Response: [
   { "id": 1, "name": "Modern", "description": "Modern songs (2016-2025)", "song_count": "136" },
   { "id": 2, "name": "Classic", "description": "Classic songs (1952-2025)", "song_count": "252" }
@@ -295,12 +295,12 @@ Response: [
 
 #### Get All Songs
 ```
-GET /api/songs?category={Modern|Classic}&status={working|broken}
+GET /api/songs?playlist={Modern|Classic}&status={working|broken}
 ```
 
 #### Get Random Song
 ```
-GET /api/songs/random?category={Modern|Classic}&exclude={videoId1,videoId2}
+GET /api/songs/random?playlist={Modern|Classic}&exclude={videoId1,videoId2}
 ```
 
 #### Get Song by Video ID
@@ -348,7 +348,7 @@ Body: {
   "artist": "Artist Name",
   "year": 2024,
   "video_id": "YouTube_Video_ID",
-  "category": "Modern"
+  "playlist": "Modern"
 }
 ```
 
@@ -360,7 +360,7 @@ Body: {
   "video_id": "new_video_id",
   "title": "Updated Title",
   "artist": "Updated Artist",
-  "category": "Classic"
+  "playlist": "Classic"
 }
 ```
 
@@ -455,7 +455,7 @@ POST /api/game-logs
 Body: {
   "video_id": "dQw4w9WgXcQ",
   "team_name": "Team 1",
-  "category": "Modern",
+  "playlist": "Modern",
   "guessed_correctly": true,
   "session_id": "session_123456"
 }
@@ -463,7 +463,7 @@ Body: {
 
 Get game logs:
 ```
-GET /api/admin/game-logs?limit=50&offset=0&category=Modern
+GET /api/admin/game-logs?limit=50&offset=0&playlist=Modern
 Headers: { "Authorization": "Bearer <token>" }
 Response: {
   "logs": [...],
@@ -479,7 +479,7 @@ GET /api/admin/game-stats
 Headers: { "Authorization": "Bearer <token>" }
 Response: {
   "totalPlays": 500,
-  "byCategory": {
+  "byPlaylist": {
     "Modern": 300,
     "Classic": 200
   },
@@ -500,13 +500,13 @@ The application automatically tracks song availability:
 - Only "working" songs are returned in random song queries
 - This ensures a smooth gameplay experience without broken videos
 
-## Categorys
+## Playlists
 
-### Modern Category (2016-2025)
+### Modern Playlist (2016-2025)
 150+ popular songs from recent years including hits from:
 - The Weeknd, Taylor Swift, Drake, Olivia Rodrigo, Harry Styles, and many more!
 
-### Classic Category (1950s-2015)
+### Classic Playlist (1950s-2015)
 Iconic songs spanning 60+ years of music history including:
 - The Beatles, Queen, Michael Jackson, Madonna, and more!
 
