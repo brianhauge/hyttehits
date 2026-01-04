@@ -523,7 +523,7 @@ hyttehits/
 ├── Dockerfile             # Web server container
 ├── Dockerfile.api         # API server container
 ├── init-db.sql           # Database schema (songs, users, sessions tables)
-├── songs-data.sql        # Song data (388 songs)
+├── songs-data.csv        # Song data (428 songs in CSV format)
 ├── index.html            # Main game HTML structure
 ├── styles.css            # Game styling and layout
 ├── game.js               # Game logic and API integration
