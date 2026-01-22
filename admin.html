@@ -41,6 +41,7 @@
             <button class="tab-btn" data-tab="add">Add Song</button>
             <button class="tab-btn" data-tab="playlists">Playlists</button>
             <button class="tab-btn" data-tab="broken">Broken Songs</button>
+            <button class="tab-btn" data-tab="csv">Excel Import/Export</button>
             <button class="tab-btn" data-tab="users">Users</button>
             <button class="tab-btn" data-tab="audit">Audit Logs</button>
             <button class="tab-btn" data-tab="game">Game Logs</button>
@@ -167,6 +168,48 @@
                             <tr><td colspan="6" class="loading">Loading broken songs...</td></tr>
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            <!-- Excel Import/Export Tab -->
+            <div id="csvTab" class="tab-content">
+                <div class="tab-header">
+                    <h2>Excel Import/Export</h2>
+                </div>
+                
+                <!-- Export Section -->
+                <div style="margin-bottom: 40px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                    <h3>Export Songs to Excel</h3>
+                    <p>Download all songs with all their data in Excel format. The Excel file includes playlist information.</p>
+                    <button id="exportCsvBtn" class="btn btn-primary">Export All Songs to Excel</button>
+                    <div id="exportMessage" class="message" style="margin-top: 15px;"></div>
+                </div>
+
+                <!-- Import Section -->
+                <div style="padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                    <h3>Import Songs from Excel</h3>
+                    <p>Upload an Excel file (.xlsx or .xls) to import or update songs. The file must have the same format as the exported Excel file.</p>
+                    <ul style="text-align: left; margin: 15px 0;">
+                        <li>Songs will be matched by <strong>Video ID</strong> or <strong>Title + Artist</strong></li>
+                        <li>If a match is found, the song will be <strong>updated</strong> with the new data</li>
+                        <li>If no match is found, a <strong>new song</strong> will be created</li>
+                        <li>The <strong>Playlists</strong> column should contain comma-separated playlist names (e.g., "Modern, Classic")</li>
+                    </ul>
+                    <form id="importCsvForm" style="margin-top: 20px;">
+                        <div class="form-group">
+                            <label for="csvFileInput">Select Excel File</label>
+                            <input type="file" id="csvFileInput" accept=".xlsx,.xls" required style="display: block; margin-top: 10px; padding: 10px; border: 2px dashed #ccc; border-radius: 4px; width: 100%; cursor: pointer;">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Import Excel</button>
+                    </form>
+                    <div id="importMessage" class="message" style="margin-top: 15px;"></div>
+                    <div id="importProgress" class="progress-container hidden" style="margin-top: 20px;">
+                        <div class="progress-bar">
+                            <div id="importProgressBar" class="progress-fill"></div>
+                        </div>
+                        <span id="importProgressText">Processing...</span>
+                    </div>
+                    <div id="importResults" style="margin-top: 20px;"></div>
                 </div>
             </div>
 

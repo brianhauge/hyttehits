@@ -1072,6 +1072,140 @@ document.getElementById('playlistForm').addEventListener('submit', async (e) => 
     }
 });
 
+// ============================================
+// EXCEL IMPORT/EXPORT
+// ============================================
+
+// Export songs to Excel
+document.getElementById('exportCsvBtn').addEventListener('click', async () => {
+    try {
+        // Make request to get Excel file
+        const response = await fetch(`${API_URL}/admin/songs/export-excel`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to export Excel file');
+        }
+        
+        // Get blob from response
+        const blob = await response.blob();
+        
+        // Create download link
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `hyttehits-songs-${new Date().toISOString().split('T')[0]}.xlsx`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        showMessage('exportMessage', `Successfully exported songs to Excel!`, 'success');
+    } catch (error) {
+        console.error('Error exporting Excel:', error);
+        showMessage('exportMessage', `Error exporting Excel: ${error.message}`, 'error');
+    }
+});
+
+// Import songs from Excel
+document.getElementById('importCsvForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const fileInput = document.getElementById('csvFileInput');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        showMessage('importMessage', 'Please select an Excel file', 'error');
+        return;
+    }
+    
+    // Check file extension
+    const fileName = file.name.toLowerCase();
+    if (!fileName.endsWith('.xlsx') && !fileName.endsWith('.xls')) {
+        showMessage('importMessage', 'Please select a valid Excel file (.xlsx or .xls)', 'error');
+        return;
+    }
+    
+    // Read file as ArrayBuffer
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+        try {
+            const arrayBuffer = event.target.result;
+            
+            // Convert to base64
+            const base64String = btoa(
+                new Uint8Array(arrayBuffer)
+                    .reduce((data, byte) => data + String.fromCharCode(byte), '')
+            );
+            
+            // Show progress
+            document.getElementById('importProgress').classList.remove('hidden');
+            document.getElementById('importProgressBar').style.width = '0%';
+            document.getElementById('importProgressText').textContent = 'Uploading and processing Excel file...';
+            
+            // Send to server
+            const result = await apiRequest('/admin/songs/import-excel', {
+                method: 'POST',
+                body: JSON.stringify({ base64Data: base64String })
+            });
+            
+            // Update progress
+            document.getElementById('importProgressBar').style.width = '100%';
+            document.getElementById('importProgressText').textContent = 'Import completed!';
+            
+            // Show results
+            const resultsDiv = document.getElementById('importResults');
+            resultsDiv.innerHTML = `
+                <div style="padding: 20px; background: #e8f5e9; border-radius: 8px; border: 1px solid #4caf50;">
+                    <h4 style="margin-top: 0; color: #2e7d32;">Import Summary</h4>
+                    <p><strong>Total rows processed:</strong> ${result.total}</p>
+                    <p><strong>Songs created:</strong> ${result.created}</p>
+                    <p><strong>Songs updated:</strong> ${result.updated}</p>
+                    <p><strong>Errors:</strong> ${result.errors.length}</p>
+                    ${result.errors.length > 0 ? `
+                        <details style="margin-top: 15px;">
+                            <summary style="cursor: pointer; font-weight: bold;">View Errors</summary>
+                            <ul style="margin-top: 10px; text-align: left;">
+                                ${result.errors.map(err => `<li>${escapeHtml(err)}</li>`).join('')}
+                            </ul>
+                        </details>
+                    ` : ''}
+                </div>
+            `;
+            
+            showMessage('importMessage', 'Excel import completed successfully!', 'success');
+            
+            // Reload songs
+            loadAllSongs();
+            
+            // Clear file input
+            fileInput.value = '';
+            
+            // Hide progress after a delay
+            setTimeout(() => {
+                document.getElementById('importProgress').classList.add('hidden');
+            }, 3000);
+            
+        } catch (error) {
+            console.error('Error importing Excel:', error);
+            showMessage('importMessage', `Error importing Excel: ${error.message}`, 'error');
+            document.getElementById('importProgress').classList.add('hidden');
+        }
+    };
+    
+    reader.onerror = () => {
+        showMessage('importMessage', 'Error reading file', 'error');
+        document.getElementById('importProgress').classList.add('hidden');
+    };
+    
+    reader.readAsArrayBuffer(file);
+});
+
 // Helper Functions
 function escapeHtml(text) {
     const div = document.createElement('div');

@@ -6,6 +6,7 @@ const { v4: uuidv4 } = require('uuid');
 const axios = require('axios');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./swagger');
+const XLSX = require('xlsx');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -1156,11 +1157,11 @@ app.get('/api/admin/songs/broken', authenticateToken, async (req, res) => {
 });
 
 // ============================================
-// CSV IMPORT/EXPORT ROUTES
+// EXCEL IMPORT/EXPORT ROUTES
 // ============================================
 
-// Export all songs to CSV
-app.get('/api/admin/songs/export-csv', authenticateToken, async (req, res) => {
+// Export all songs to Excel
+app.get('/api/admin/songs/export-excel', authenticateToken, async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT s.id, s.video_id, s.title, s.artist, s.year, s.status,
@@ -1174,76 +1175,86 @@ app.get('/api/admin/songs/export-csv', authenticateToken, async (req, res) => {
     
     const songs = result.rows;
     
-    // Create CSV header
-    const header = 'video_id,title,artist,year,status,playlists\n';
+    // Prepare data for Excel
+    const data = songs.map(song => ({
+      video_id: song.video_id,
+      title: song.title,
+      artist: song.artist,
+      year: song.year,
+      status: song.status,
+      playlists: song.playlists || ''
+    }));
     
-    // Create CSV rows
-    const rows = songs.map(song => {
-      // Escape fields that contain commas, quotes, or newlines
-      const escapeField = (field) => {
-        if (field == null) return '';
-        const str = String(field);
-        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-          return `"${str.replace(/"/g, '""')}"`;
-        }
-        return str;
-      };
-      
-      return [
-        escapeField(song.video_id),
-        escapeField(song.title),
-        escapeField(song.artist),
-        escapeField(song.year),
-        escapeField(song.status),
-        escapeField(song.playlists || '')
-      ].join(',');
-    }).join('\n');
+    // Create workbook and worksheet
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(data);
     
-    const csv = header + rows;
+    // Set column widths
+    worksheet['!cols'] = [
+      { wch: 15 }, // video_id
+      { wch: 40 }, // title
+      { wch: 30 }, // artist
+      { wch: 8 },  // year
+      { wch: 10 }, // status
+      { wch: 30 }  // playlists
+    ];
+    
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Songs');
+    
+    // Generate Excel file buffer
+    const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
     
     // Log audit
-    await logAudit(req.user.user_id, 'export', 'songs', null, { count: songs.length }, getClientIp(req));
+    await logAudit(req.user.user_id, 'export', 'songs', null, { count: songs.length, format: 'excel' }, getClientIp(req));
     
-    res.json({ csv, count: songs.length });
+    // Send as downloadable file
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=songs-export.xlsx');
+    res.send(excelBuffer);
   } catch (err) {
-    console.error('Error exporting CSV:', err);
+    console.error('Error exporting Excel:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// Import songs from CSV
-app.post('/api/admin/songs/import-csv', authenticateToken, async (req, res) => {
+// Import songs from Excel
+app.post('/api/admin/songs/import-excel', authenticateToken, async (req, res) => {
   const client = await pool.connect();
   try {
-    const { csv } = req.body;
+    const { base64Data } = req.body;
     
-    if (!csv) {
-      return res.status(400).json({ error: 'CSV content required' });
+    if (!base64Data) {
+      return res.status(400).json({ error: 'Excel file data required' });
     }
     
-    // Parse CSV
-    const lines = csv.split('\n').filter(line => line.trim());
-    if (lines.length < 2) {
-      return res.status(400).json({ error: 'CSV file is empty or invalid' });
+    // Convert base64 to buffer
+    const buffer = Buffer.from(base64Data, 'base64');
+    
+    // Read Excel file
+    const workbook = XLSX.read(buffer, { type: 'buffer' });
+    
+    // Get first worksheet
+    const worksheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[worksheetName];
+    
+    // Convert to JSON
+    const data = XLSX.utils.sheet_to_json(worksheet);
+    
+    if (data.length === 0) {
+      return res.status(400).json({ error: 'Excel file is empty' });
     }
     
-    // Parse header
-    const header = parseCSVLine(lines[0]);
+    // Validate required columns
     const expectedHeaders = ['video_id', 'title', 'artist', 'year', 'status', 'playlists'];
+    const firstRow = data[0];
+    const hasAllHeaders = expectedHeaders.every(h => h in firstRow);
     
-    // Validate header
-    const hasAllHeaders = expectedHeaders.every(h => header.includes(h));
     if (!hasAllHeaders) {
+      const foundHeaders = Object.keys(firstRow);
       return res.status(400).json({ 
-        error: `CSV must have these columns: ${expectedHeaders.join(', ')}. Found: ${header.join(', ')}` 
+        error: `Excel must have these columns: ${expectedHeaders.join(', ')}. Found: ${foundHeaders.join(', ')}` 
       });
     }
-    
-    // Get column indices
-    const indices = {};
-    expectedHeaders.forEach(h => {
-      indices[h] = header.indexOf(h);
-    });
     
     await client.query('BEGIN');
     
@@ -1259,30 +1270,25 @@ app.post('/api/admin/songs/import-csv', authenticateToken, async (req, res) => {
     });
     
     // Process each row
-    for (let i = 1; i < lines.length; i++) {
+    for (let i = 0; i < data.length; i++) {
       try {
-        const row = parseCSVLine(lines[i]);
+        const row = data[i];
         
-        if (row.length < expectedHeaders.length) {
-          errors.push(`Row ${i + 1}: Incomplete row`);
-          continue;
-        }
-        
-        const video_id = row[indices.video_id]?.trim();
-        const title = row[indices.title]?.trim();
-        const artist = row[indices.artist]?.trim();
-        const year = parseInt(row[indices.year]?.trim());
-        const status = row[indices.status]?.trim() || 'working';
-        const playlistsStr = row[indices.playlists]?.trim() || '';
+        const video_id = String(row.video_id || '').trim();
+        const title = String(row.title || '').trim();
+        const artist = String(row.artist || '').trim();
+        const year = parseInt(row.year);
+        const status = String(row.status || 'working').trim();
+        const playlistsStr = String(row.playlists || '').trim();
         
         // Validate required fields
         if (!video_id || !title || !artist || !year) {
-          errors.push(`Row ${i + 1}: Missing required fields (video_id, title, artist, or year)`);
+          errors.push(`Row ${i + 2}: Missing required fields (video_id, title, artist, or year)`);
           continue;
         }
         
         if (isNaN(year)) {
-          errors.push(`Row ${i + 1}: Invalid year value`);
+          errors.push(`Row ${i + 2}: Invalid year value`);
           continue;
         }
         
@@ -1298,12 +1304,12 @@ app.post('/api/admin/songs/import-csv', authenticateToken, async (req, res) => {
           if (playlistId) {
             playlistIds.push(playlistId);
           } else {
-            errors.push(`Row ${i + 1}: Playlist "${name}" not found`);
+            errors.push(`Row ${i + 2}: Playlist "${name}" not found`);
           }
         }
         
         if (playlistIds.length === 0 && playlistNames.length > 0) {
-          errors.push(`Row ${i + 1}: No valid playlists found`);
+          errors.push(`Row ${i + 2}: No valid playlists found`);
           continue;
         }
         
@@ -1364,8 +1370,8 @@ app.post('/api/admin/songs/import-csv', authenticateToken, async (req, res) => {
         }
         
       } catch (err) {
-        console.error(`Error processing row ${i + 1}:`, err);
-        errors.push(`Row ${i + 1}: ${err.message}`);
+        console.error(`Error processing row ${i + 2}:`, err);
+        errors.push(`Row ${i + 2}: ${err.message}`);
       }
     }
     
@@ -1373,14 +1379,15 @@ app.post('/api/admin/songs/import-csv', authenticateToken, async (req, res) => {
     
     // Log audit
     await logAudit(req.user.user_id, 'import', 'songs', null, { 
-      total: lines.length - 1, 
+      total: data.length, 
       created, 
       updated, 
-      errors: errors.length 
+      errors: errors.length,
+      format: 'excel'
     }, getClientIp(req));
     
     res.json({
-      total: lines.length - 1,
+      total: data.length,
       created,
       updated,
       errors
@@ -1388,46 +1395,12 @@ app.post('/api/admin/songs/import-csv', authenticateToken, async (req, res) => {
     
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('Error importing CSV:', err);
+    console.error('Error importing Excel:', err);
     res.status(500).json({ error: 'Internal server error', details: err.message });
   } finally {
     client.release();
   }
 });
-
-// Helper function to parse CSV line (handles quoted fields)
-function parseCSVLine(line) {
-  const result = [];
-  let current = '';
-  let inQuotes = false;
-  
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-    const nextChar = line[i + 1];
-    
-    if (char === '"') {
-      if (inQuotes && nextChar === '"') {
-        // Escaped quote
-        current += '"';
-        i++;
-      } else {
-        // Toggle quotes
-        inQuotes = !inQuotes;
-      }
-    } else if (char === ',' && !inQuotes) {
-      // End of field
-      result.push(current);
-      current = '';
-    } else {
-      current += char;
-    }
-  }
-  
-  // Add last field
-  result.push(current);
-  
-  return result;
-}
 
 // ============================================
 // PLAYLIST MANAGEMENT ROUTES
