@@ -4,6 +4,8 @@ const { Pool } = require('pg');
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
 const axios = require('axios');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./swagger');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -16,6 +18,18 @@ const pool = new Pool({
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Swagger documentation
+app.use('/swagger', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'Hyttehits API Documentation'
+}));
+
+// OpenAPI spec JSON endpoint
+app.get('/swagger.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
+});
 
 // Test database connection
 pool.query('SELECT NOW()', (err, res) => {
@@ -76,6 +90,46 @@ function getClientIp(req) {
 // AUTHENTICATION ROUTES
 // ============================================
 
+/**
+ * @openapi
+ * /api/auth/login:
+ *   post:
+ *     tags:
+ *       - Authentication
+ *     summary: Login and get authentication token
+ *     description: Authenticate with username and password to receive a session token
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/LoginRequest'
+ *     responses:
+ *       200:
+ *         description: Successfully authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/LoginResponse'
+ *       400:
+ *         description: Missing username or password
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Invalid credentials
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Login
 app.post('/api/auth/login', async (req, res) => {
   try {
@@ -135,6 +189,38 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+/**
+ * @openapi
+ * /api/auth/logout:
+ *   post:
+ *     tags:
+ *       - Authentication
+ *     summary: Logout and invalidate token
+ *     description: Logout and delete the current session
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Successfully logged out
+ *       401:
+ *         description: Access token required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Invalid or expired token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Logout
 app.post('/api/auth/logout', authenticateToken, async (req, res) => {
   try {
@@ -151,6 +237,41 @@ app.post('/api/auth/logout', authenticateToken, async (req, res) => {
   }
 });
 
+/**
+ * @openapi
+ * /api/auth/verify:
+ *   get:
+ *     tags:
+ *       - Authentication
+ *     summary: Verify authentication token
+ *     description: Check if the current token is valid
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Token is valid
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 valid:
+ *                   type: boolean
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Access token required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Invalid or expired token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Verify token
 app.get('/api/auth/verify', authenticateToken, (req, res) => {
   res.json({
@@ -167,6 +288,30 @@ app.get('/api/auth/verify', authenticateToken, (req, res) => {
 // PUBLIC ROUTES
 // ============================================
 
+/**
+ * @openapi
+ * /api/playlists:
+ *   get:
+ *     tags:
+ *       - Public Playlists
+ *     summary: Get all playlists
+ *     description: Returns all playlists with song counts (only includes playlists with working songs)
+ *     responses:
+ *       200:
+ *         description: List of playlists
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Playlist'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Get all playlists (public endpoint for game interface)
 app.get('/api/playlists', async (req, res) => {
   try {
@@ -186,6 +331,28 @@ app.get('/api/playlists', async (req, res) => {
   }
 });
 
+/**
+ * @openapi
+ * /api/songs/year-range-info:
+ *   get:
+ *     tags:
+ *       - Public Songs
+ *     summary: Get year range information
+ *     description: Returns the minimum and maximum years available and total song count
+ *     responses:
+ *       200:
+ *         description: Year range information
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/YearRangeInfo'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Get year range from database (public endpoint for game interface)
 app.get('/api/songs/year-range-info', async (req, res) => {
   try {
@@ -213,6 +380,33 @@ app.get('/api/songs/year-range-info', async (req, res) => {
   }
 });
 
+/**
+ * @openapi
+ * /api/songs/counts-by-year:
+ *   get:
+ *     tags:
+ *       - Public Songs
+ *     summary: Get song counts by year
+ *     description: Returns the number of working songs for each year
+ *     responses:
+ *       200:
+ *         description: Song counts by year
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               additionalProperties:
+ *                 type: integer
+ *               example:
+ *                 "1990": 15
+ *                 "1991": 20
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Get song counts by year (public endpoint for game interface)
 app.get('/api/songs/counts-by-year', async (req, res) => {
   try {
@@ -241,6 +435,42 @@ app.get('/api/songs/counts-by-year', async (req, res) => {
 // PUBLIC SONG ROUTES
 // ============================================
 
+/**
+ * @openapi
+ * /api/songs:
+ *   get:
+ *     tags:
+ *       - Public Songs
+ *     summary: Get all songs
+ *     description: Returns all songs with their playlists, optionally filtered by status or playlist
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [working, broken]
+ *         description: Filter by status
+ *       - in: query
+ *         name: playlist
+ *         schema:
+ *           type: string
+ *         description: Filter by playlist name
+ *     responses:
+ *       200:
+ *         description: List of songs
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Song'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Get all songs with playlists
 app.get('/api/songs', async (req, res) => {
   try {
@@ -336,6 +566,46 @@ app.get('/api/songs/year-range', async (req, res) => {
   }
 });
 
+/**
+ * @openapi
+ * /api/songs/random:
+ *   get:
+ *     tags:
+ *       - Public Songs
+ *     summary: Get a random song
+ *     description: Returns a random working song, optionally filtered by playlist or excluding specific video IDs
+ *     parameters:
+ *       - in: query
+ *         name: playlist
+ *         schema:
+ *           type: string
+ *         description: Filter by playlist name
+ *       - in: query
+ *         name: exclude
+ *         schema:
+ *           type: string
+ *         description: Comma-separated list of video IDs to exclude
+ *         example: "abc123,def456"
+ *     responses:
+ *       200:
+ *         description: Random song
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Song'
+ *       404:
+ *         description: No songs available
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Get a random song
 app.get('/api/songs/random', async (req, res) => {
   try {
@@ -505,6 +775,60 @@ app.put('/api/admin/songs/:videoId', authenticateToken, async (req, res) => {
   }
 });
 
+/**
+ * @openapi
+ * /api/admin/songs:
+ *   post:
+ *     tags:
+ *       - Admin Songs
+ *     summary: Add a new song
+ *     description: Create a new song (requires authentication)
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/SongCreate'
+ *     responses:
+ *       201:
+ *         description: Song created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Song'
+ *       400:
+ *         description: Missing required fields or validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Access token required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Invalid or expired token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       409:
+ *         description: Song with this video ID already exists
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Add a new song
 app.post('/api/admin/songs', authenticateToken, async (req, res) => {
   const client = await pool.connect();
@@ -647,6 +971,42 @@ async function checkSongsInBackground(songs) {
   console.log('Background song check completed');
 }
 
+/**
+ * @openapi
+ * /api/admin/stats:
+ *   get:
+ *     tags:
+ *       - Admin Songs
+ *     summary: Get song statistics
+ *     description: Returns statistics about songs (requires authentication)
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Song statistics
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Stats'
+ *       401:
+ *         description: Access token required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Invalid or expired token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Get statistics
 app.get('/api/admin/stats', authenticateToken, async (req, res) => {
   try {
@@ -655,7 +1015,8 @@ app.get('/api/admin/stats', authenticateToken, async (req, res) => {
       SELECT 
         COUNT(*) as total,
         SUM(CASE WHEN status = 'working' THEN 1 ELSE 0 END) as working,
-        SUM(CASE WHEN status = 'broken' THEN 1 ELSE 0 END) as broken
+        SUM(CASE WHEN status = 'broken' THEN 1 ELSE 0 END) as broken,
+        SUM(CASE WHEN last_checked IS NULL THEN 1 ELSE 0 END) as unchecked
       FROM songs
     `);
     
@@ -672,6 +1033,7 @@ app.get('/api/admin/stats', authenticateToken, async (req, res) => {
       total: parseInt(overallStats.rows[0].total),
       working: parseInt(overallStats.rows[0].working),
       broken: parseInt(overallStats.rows[0].broken),
+      unchecked: parseInt(overallStats.rows[0].unchecked),
       byPlaylist: {}
     };
     
@@ -792,6 +1154,280 @@ app.get('/api/admin/songs/broken', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+// ============================================
+// CSV IMPORT/EXPORT ROUTES
+// ============================================
+
+// Export all songs to CSV
+app.get('/api/admin/songs/export-csv', authenticateToken, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT s.id, s.video_id, s.title, s.artist, s.year, s.status,
+        string_agg(c.name, ', ' ORDER BY c.name) as playlists
+      FROM songs s
+      LEFT JOIN song_playlists sc ON s.id = sc.song_id
+      LEFT JOIN playlists c ON sc.playlist_id = c.id
+      GROUP BY s.id
+      ORDER BY s.year, s.title
+    `);
+    
+    const songs = result.rows;
+    
+    // Create CSV header
+    const header = 'video_id,title,artist,year,status,playlists\n';
+    
+    // Create CSV rows
+    const rows = songs.map(song => {
+      // Escape fields that contain commas, quotes, or newlines
+      const escapeField = (field) => {
+        if (field == null) return '';
+        const str = String(field);
+        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      };
+      
+      return [
+        escapeField(song.video_id),
+        escapeField(song.title),
+        escapeField(song.artist),
+        escapeField(song.year),
+        escapeField(song.status),
+        escapeField(song.playlists || '')
+      ].join(',');
+    }).join('\n');
+    
+    const csv = header + rows;
+    
+    // Log audit
+    await logAudit(req.user.user_id, 'export', 'songs', null, { count: songs.length }, getClientIp(req));
+    
+    res.json({ csv, count: songs.length });
+  } catch (err) {
+    console.error('Error exporting CSV:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Import songs from CSV
+app.post('/api/admin/songs/import-csv', authenticateToken, async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { csv } = req.body;
+    
+    if (!csv) {
+      return res.status(400).json({ error: 'CSV content required' });
+    }
+    
+    // Parse CSV
+    const lines = csv.split('\n').filter(line => line.trim());
+    if (lines.length < 2) {
+      return res.status(400).json({ error: 'CSV file is empty or invalid' });
+    }
+    
+    // Parse header
+    const header = parseCSVLine(lines[0]);
+    const expectedHeaders = ['video_id', 'title', 'artist', 'year', 'status', 'playlists'];
+    
+    // Validate header
+    const hasAllHeaders = expectedHeaders.every(h => header.includes(h));
+    if (!hasAllHeaders) {
+      return res.status(400).json({ 
+        error: `CSV must have these columns: ${expectedHeaders.join(', ')}. Found: ${header.join(', ')}` 
+      });
+    }
+    
+    // Get column indices
+    const indices = {};
+    expectedHeaders.forEach(h => {
+      indices[h] = header.indexOf(h);
+    });
+    
+    await client.query('BEGIN');
+    
+    let created = 0;
+    let updated = 0;
+    const errors = [];
+    
+    // Get all playlists for lookup
+    const playlistsResult = await client.query('SELECT id, name FROM playlists');
+    const playlistMap = {};
+    playlistsResult.rows.forEach(p => {
+      playlistMap[p.name.toLowerCase()] = p.id;
+    });
+    
+    // Process each row
+    for (let i = 1; i < lines.length; i++) {
+      try {
+        const row = parseCSVLine(lines[i]);
+        
+        if (row.length < expectedHeaders.length) {
+          errors.push(`Row ${i + 1}: Incomplete row`);
+          continue;
+        }
+        
+        const video_id = row[indices.video_id]?.trim();
+        const title = row[indices.title]?.trim();
+        const artist = row[indices.artist]?.trim();
+        const year = parseInt(row[indices.year]?.trim());
+        const status = row[indices.status]?.trim() || 'working';
+        const playlistsStr = row[indices.playlists]?.trim() || '';
+        
+        // Validate required fields
+        if (!video_id || !title || !artist || !year) {
+          errors.push(`Row ${i + 1}: Missing required fields (video_id, title, artist, or year)`);
+          continue;
+        }
+        
+        if (isNaN(year)) {
+          errors.push(`Row ${i + 1}: Invalid year value`);
+          continue;
+        }
+        
+        // Parse playlists
+        const playlistNames = playlistsStr
+          .split(',')
+          .map(p => p.trim())
+          .filter(p => p.length > 0);
+        
+        const playlistIds = [];
+        for (const name of playlistNames) {
+          const playlistId = playlistMap[name.toLowerCase()];
+          if (playlistId) {
+            playlistIds.push(playlistId);
+          } else {
+            errors.push(`Row ${i + 1}: Playlist "${name}" not found`);
+          }
+        }
+        
+        if (playlistIds.length === 0 && playlistNames.length > 0) {
+          errors.push(`Row ${i + 1}: No valid playlists found`);
+          continue;
+        }
+        
+        // Check if song exists by video_id
+        let existingResult = await client.query(
+          'SELECT id FROM songs WHERE video_id = $1',
+          [video_id]
+        );
+        
+        let songId;
+        let isUpdate = false;
+        
+        if (existingResult.rows.length > 0) {
+          // Song exists by video_id - update it
+          songId = existingResult.rows[0].id;
+          isUpdate = true;
+        } else {
+          // Check by title + artist
+          existingResult = await client.query(
+            'SELECT id FROM songs WHERE LOWER(title) = LOWER($1) AND LOWER(artist) = LOWER($2)',
+            [title, artist]
+          );
+          
+          if (existingResult.rows.length > 0) {
+            // Song exists by title+artist - update it
+            songId = existingResult.rows[0].id;
+            isUpdate = true;
+          }
+        }
+        
+        if (isUpdate) {
+          // Update existing song
+          await client.query(
+            'UPDATE songs SET video_id = $1, title = $2, artist = $3, year = $4, status = $5 WHERE id = $6',
+            [video_id, title, artist, year, status, songId]
+          );
+          
+          // Delete existing playlists
+          await client.query('DELETE FROM song_playlists WHERE song_id = $1', [songId]);
+          
+          updated++;
+        } else {
+          // Insert new song
+          const insertResult = await client.query(
+            'INSERT INTO songs (video_id, title, artist, year, status) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+            [video_id, title, artist, year, status]
+          );
+          songId = insertResult.rows[0].id;
+          created++;
+        }
+        
+        // Insert playlists
+        for (const playlistId of playlistIds) {
+          await client.query(
+            'INSERT INTO song_playlists (song_id, playlist_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+            [songId, playlistId]
+          );
+        }
+        
+      } catch (err) {
+        console.error(`Error processing row ${i + 1}:`, err);
+        errors.push(`Row ${i + 1}: ${err.message}`);
+      }
+    }
+    
+    await client.query('COMMIT');
+    
+    // Log audit
+    await logAudit(req.user.user_id, 'import', 'songs', null, { 
+      total: lines.length - 1, 
+      created, 
+      updated, 
+      errors: errors.length 
+    }, getClientIp(req));
+    
+    res.json({
+      total: lines.length - 1,
+      created,
+      updated,
+      errors
+    });
+    
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Error importing CSV:', err);
+    res.status(500).json({ error: 'Internal server error', details: err.message });
+  } finally {
+    client.release();
+  }
+});
+
+// Helper function to parse CSV line (handles quoted fields)
+function parseCSVLine(line) {
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+  
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    const nextChar = line[i + 1];
+    
+    if (char === '"') {
+      if (inQuotes && nextChar === '"') {
+        // Escaped quote
+        current += '"';
+        i++;
+      } else {
+        // Toggle quotes
+        inQuotes = !inQuotes;
+      }
+    } else if (char === ',' && !inQuotes) {
+      // End of field
+      result.push(current);
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  
+  // Add last field
+  result.push(current);
+  
+  return result;
+}
 
 // ============================================
 // PLAYLIST MANAGEMENT ROUTES
@@ -1102,6 +1738,36 @@ app.get('/api/admin/audit-logs', authenticateToken, async (req, res) => {
 // GAME LOG ROUTES
 // ============================================
 
+/**
+ * @openapi
+ * /api/game-logs:
+ *   post:
+ *     tags:
+ *       - Game Logs
+ *     summary: Log a song play
+ *     description: Record a song play event from the game
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/GameLog'
+ *     responses:
+ *       201:
+ *         description: Game log created
+ *       400:
+ *         description: video_id is required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Log a song play (public endpoint)
 app.post('/api/game-logs', async (req, res) => {
   try {
@@ -1245,6 +1911,26 @@ app.get('/api/admin/game-stats', authenticateToken, async (req, res) => {
   }
 });
 
+/**
+ * @openapi
+ * /health:
+ *   get:
+ *     tags:
+ *       - Health
+ *     summary: Health check
+ *     description: Check if the API is running
+ *     responses:
+ *       200:
+ *         description: API is healthy
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: ok
+ */
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
