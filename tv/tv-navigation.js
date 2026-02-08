@@ -27,46 +27,75 @@ class TVNavigation {
     handleKeyDown(event) {
         const key = event.key;
         const keyCode = event.keyCode;
-
-        // Prevent key repeat spam
+        
+        console.log('Key pressed:', key, 'KeyCode:', keyCode);
+        
+        // Prevent default for navigation keys
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'].includes(key)) {
+            event.preventDefault();
+        }
+        
+        // Prevent navigation lock spam
         if (this.isNavigating) return;
         this.isNavigating = true;
-
-        console.log('Key pressed:', key, 'KeyCode:', keyCode);
-
-        // Handle different keys
+        
+        // Handle by key name first, then return to avoid duplicate handling
         switch(key) {
             case 'ArrowUp':
                 this.handleArrowKey('up');
-                break;
+                return;
             case 'ArrowDown':
                 this.handleArrowKey('down');
-                break;
+                return;
             case 'ArrowLeft':
                 this.handleArrowKey('left');
-                break;
+                return;
             case 'ArrowRight':
                 this.handleArrowKey('right');
-                break;
+                return;
             case 'Enter':
                 this.handleEnterKey();
-                break;
+                return;
             case 'Backspace':
             case 'Escape':
                 this.handleBackKey();
-                break;
-            // Android TV specific key codes
-            case 23: // KEYCODE_DPAD_CENTER
-                this.handleEnterKey();
-                break;
-            case 4: // KEYCODE_BACK
-                this.handleBackKey();
-                break;
-            // Tizen TV specific
-            case 10009: // Tizen Back button
-                this.handleBackKey();
-                break;
+                return;
         }
+
+        // Handle by keyCode for compatibility (only if key name didn't match)
+        if (keyCode) {
+            switch(keyCode) {
+                case 38: // Up
+                    this.handleArrowKey('up');
+                    break;
+                case 40: // Down
+                    this.handleArrowKey('down');
+                    break;
+                case 37: // Left
+                    this.handleArrowKey('left');
+                    break;
+                case 39: // Right
+                    this.handleArrowKey('right');
+                    break;
+                case 13: // Enter
+                    this.handleEnterKey();
+                    break;
+                case 8: // Backspace
+                case 27: // Escape
+                    this.handleBackKey();
+                    break;
+                case 23: // KEYCODE_DPAD_CENTER (Android TV)
+                    this.handleEnterKey();
+                    break;
+                case 4: // KEYCODE_BACK (Android TV)
+                    this.handleBackKey();
+                    break;
+                case 10009: // Tizen back
+                    this.handleBackKey();
+                    break;
+            }
+        }
+    }
 
         // Also handle by keyCode for compatibility
         if (keyCode) {
@@ -108,19 +137,6 @@ class TVNavigation {
         // Check if we're in a special context
         const activeScreen = document.querySelector('.screen.active');
         if (!activeScreen) return;
-
-        // Special handling for year range controls
-        if (activeScreen.id === 'setup-screen') {
-            const yearRangeMode = document.getElementById('year-range-mode');
-            if (yearRangeMode && !yearRangeMode.classList.contains('hidden')) {
-                // Check if a year adjust button is focused
-                const focused = window.focusManager.currentFocusedElement;
-                if (focused && focused.classList.contains('year-adjust-btn')) {
-                    // Don't navigate away, let the button handle the adjustment
-                    return;
-                }
-            }
-        }
 
         // Use focus manager for spatial navigation
         window.focusManager.navigate(direction);

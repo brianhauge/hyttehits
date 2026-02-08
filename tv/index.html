@@ -17,14 +17,22 @@
                 <div id="team-setup">
                     <!-- Mode Selector -->
                     <div class="mode-selector">
-                        <button class="mode-btn focusable active" data-mode="year-range" tabindex="0">
-                            <span class="mode-icon">📅</span>
-                            <span class="mode-text">Årsinterval</span>
+                        <button class="mode-btn focusable active" data-mode="all-songs" tabindex="0">
+                            <span class="mode-icon">🎵</span>
+                            <span class="mode-text">Alle Sange</span>
                         </button>
                         <button class="mode-btn focusable" data-mode="playlist" tabindex="0">
-                            <span class="mode-icon">🎵</span>
+                            <span class="mode-icon">📋</span>
                             <span class="mode-text">Playliste</span>
                         </button>
+                    </div>
+                    
+                    <!-- All Songs Mode -->
+                    <div id="all-songs-mode" class="mode-content">
+                        <h2 class="section-title">Alle Sange</h2>
+                        <div class="all-songs-info">
+                            <p class="info-text">Spil med alle <span id="total-song-count">519</span> sange fra <span id="year-range-text">1954-2025</span></p>
+                        </div>
                     </div>
                     
                     <!-- Playlist Mode -->
@@ -32,34 +40,6 @@
                         <h2 class="section-title">Vælg Playliste</h2>
                         <div id="playlist-options" class="playlist-grid">
                             <!-- Playlists loaded dynamically -->
-                        </div>
-                    </div>
-                    
-                    <!-- Year Range Mode -->
-                    <div id="year-range-mode" class="mode-content">
-                        <h2 class="section-title">Vælg Årsinterval</h2>
-                        <div class="year-display">
-                            <div class="year-box">
-                                <span class="year-label">Fra</span>
-                                <span id="year-start-value" class="year-value">1954</span>
-                            </div>
-                            <div class="year-info">
-                                <span id="year-song-count" class="song-count">0 sange</span>
-                            </div>
-                            <div class="year-box">
-                                <span class="year-label">Til</span>
-                                <span id="year-end-value" class="year-value">2025</span>
-                            </div>
-                        </div>
-                        <div class="year-controls">
-                            <button class="year-adjust-btn focusable" data-year-type="start" tabindex="0">
-                                <span>Start År</span>
-                                <span class="year-hint">↑↓</span>
-                            </button>
-                            <button class="year-adjust-btn focusable" data-year-type="end" tabindex="0">
-                                <span>Slut År</span>
-                                <span class="year-hint">↑↓</span>
-                            </button>
                         </div>
                     </div>
                     

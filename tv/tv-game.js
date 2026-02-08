@@ -10,7 +10,7 @@ const gameState = {
     },
     currentSong: null,
     usedSongIds: new Set(),
-    gameMode: 'year-range', // 'playlist' or 'year-range'
+    gameMode: 'all-songs', // 'playlist' or 'all-songs'
     selectedPlaylist: null,
     yearStart: 1954,
     yearEnd: 2025,
@@ -51,6 +51,9 @@ const keyboardState = {
 
 class GameController {
     constructor() {
+        this.isLoadingSong = false; // Add guard flag
+        this.isShowingOptions = false; // Add guard flag for showGuessOptions
+        this.isProcessingGuess = false; // Add guard flag for makeGuess
         this.init();
     }
 
@@ -157,19 +160,6 @@ class GameController {
             btn.addEventListener('click', () => this.handleModeChange(btn.dataset.mode));
         });
         
-        // Year adjustment buttons - handle with arrow keys
-        document.querySelectorAll('.year-adjust-btn').forEach(btn => {
-            btn.addEventListener('keydown', (e) => {
-                const yearType = btn.dataset.yearType;
-                if (e.key === 'ArrowUp') {
-                    e.preventDefault();
-                    this.handleYearAdjust(`${yearType}-inc`);
-                } else if (e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    this.handleYearAdjust(`${yearType}-dec`);
-                }
-            });
-        });
         
         // Team name buttons
         const team1Btn = document.getElementById('team1-btn');
@@ -203,11 +193,12 @@ class GameController {
         // Populate playlists
         this.populatePlaylists();
         
-        // Set initial year display
-        this.updateYearDisplay();
+        // Update all songs info
+        document.getElementById('total-song-count').textContent = yearRangeInfo.total_songs || 519;
+        document.getElementById('year-range-text').textContent = `${yearRangeInfo.min_year}-${yearRangeInfo.max_year}`;
         
-        // Set mode to year-range by default
-        this.handleModeChange('year-range');
+        // Set mode to all-songs by default
+        this.handleModeChange('all-songs');
     }
 
     populatePlaylists() {
@@ -258,54 +249,20 @@ class GameController {
         
         // Show/hide mode content
         const playlistMode = document.getElementById('playlist-mode');
-        const yearRangeMode = document.getElementById('year-range-mode');
+        const allSongsMode = document.getElementById('all-songs-mode');
         
         if (mode === 'playlist') {
             playlistMode.classList.remove('hidden');
-            yearRangeMode.classList.add('hidden');
+            allSongsMode.classList.add('hidden');
         } else {
             playlistMode.classList.add('hidden');
-            yearRangeMode.classList.remove('hidden');
+            allSongsMode.classList.remove('hidden');
         }
         
         // Refresh focusable elements
         setTimeout(() => window.focusManager.refresh(), 100);
     }
 
-    handleYearAdjust(action) {
-        const MIN_YEAR = yearRangeInfo.min_year;
-        const MAX_YEAR = yearRangeInfo.max_year;
-        
-        switch(action) {
-            case 'start-dec':
-                gameState.yearStart = Math.max(MIN_YEAR, gameState.yearStart - 1);
-                break;
-            case 'start-inc':
-                gameState.yearStart = Math.min(gameState.yearEnd, gameState.yearStart + 1);
-                break;
-            case 'end-dec':
-                gameState.yearEnd = Math.max(gameState.yearStart, gameState.yearEnd - 1);
-                break;
-            case 'end-inc':
-                gameState.yearEnd = Math.min(MAX_YEAR, gameState.yearEnd + 1);
-                break;
-        }
-        
-        this.updateYearDisplay();
-    }
-
-    updateYearDisplay() {
-        document.getElementById('year-start-value').textContent = gameState.yearStart;
-        document.getElementById('year-end-value').textContent = gameState.yearEnd;
-        
-        // Calculate song count
-        let count = 0;
-        for (let year = gameState.yearStart; year <= gameState.yearEnd; year++) {
-            count += (songCountsByYear[year] || 0);
-        }
-        
-        document.getElementById('year-song-count').textContent = `${count} ${count === 1 ? 'sang' : 'sange'}`;
-    }
 
     openKeyboard(teamNumber) {
         const modal = document.getElementById('keyboard-modal');
@@ -471,12 +428,19 @@ class GameController {
     }
 
     async playNextSong() {
+        // Prevent concurrent calls
+        if (this.isLoadingSong) {
+            console.log('Already loading a song, skipping duplicate call');
+            return;
+        }
+        
+        this.isLoadingSong = true;
+        
         try {
             const song = this.getRandomSong();
             console.log('Playing song:', song.title);
             
             gameState.currentSong = song;
-            gameState.usedSongIds.add(song.video_id);
             
             // Update team indicator
             const currentTeam = gameState.currentTeam;
@@ -486,19 +450,26 @@ class GameController {
             document.getElementById('current-turn-text').textContent = teamName;
             indicator.className = `current-team-indicator team${currentTeam}`;
             
-            // Show guess options
-            this.showGuessOptions();
-            
-            // Play video
+            // Try to play video FIRST before showing guess options
             try {
                 await window.youtubeAPI.playVideo(song.video_id);
+                
+                // Video started successfully, now mark as used and show options
+                gameState.usedSongIds.add(song.video_id);
+                this.showGuessOptions();
+                
+                this.isLoadingSong = false; // Reset flag on success
+                
             } catch (error) {
                 console.error('Video playback error:', error);
                 await this.markSongAsBroken(song.video_id);
+                // Don't add to usedSongIds since we're trying again
+                this.isLoadingSong = false; // Reset flag before retry
                 this.playNextSong();
             }
         } catch (error) {
             console.error('Error in playNextSong:', error);
+            this.isLoadingSong = false; // Reset flag on error
             alert('Fejl ved afspilning af sang');
         }
     }
@@ -508,6 +479,16 @@ class GameController {
         const timeline = gameState.teams[currentTeam].timeline;
         const container = document.getElementById('guess-options');
         
+        console.log(`[showGuessOptions] Team ${currentTeam}, Timeline length: ${timeline.length}`);
+        
+        // Prevent duplicate calls by checking if we're already showing options
+        if (this.isShowingOptions) {
+            console.log('[showGuessOptions] Already showing options, skipping duplicate call');
+            return;
+        }
+        this.isShowingOptions = true;
+        
+        // Clear existing content
         container.innerHTML = '';
         
         if (timeline.length === 0) {
@@ -516,7 +497,7 @@ class GameController {
             btn.className = 'guess-btn focusable';
             btn.textContent = 'Placer Første Kort';
             btn.tabIndex = 0;
-            btn.addEventListener('click', () => this.makeGuess(0));
+            btn.addEventListener('click', () => this.makeGuess(0), { once: true });
             container.appendChild(btn);
         } else {
             // Create buttons and cards
@@ -542,7 +523,7 @@ class GameController {
                         btn.textContent = `${timeline[i - 1].year} - ${timeline[i].year}`;
                     }
                     
-                    btn.addEventListener('click', () => this.makeGuess(i));
+                    btn.addEventListener('click', () => this.makeGuess(i), { once: true });
                     container.appendChild(btn);
                 }
                 
@@ -563,10 +544,20 @@ class GameController {
         setTimeout(() => {
             const firstBtn = container.querySelector('.guess-btn');
             if (firstBtn) window.focusManager.setFocus(firstBtn);
+            this.isShowingOptions = false; // Reset flag after focus is set
         }, 100);
     }
 
     makeGuess(position) {
+        // Prevent multiple simultaneous guesses
+        if (this.isProcessingGuess) {
+            console.log('[makeGuess] Already processing a guess, ignoring duplicate call');
+            return;
+        }
+        this.isProcessingGuess = true;
+        
+        // Reset the flag when a guess is made
+        this.isShowingOptions = false;
         const currentTeam = gameState.currentTeam;
         const timeline = gameState.teams[currentTeam].timeline;
         const song = gameState.currentSong;
@@ -637,6 +628,9 @@ class GameController {
 
     continueGame() {
         document.getElementById('result-modal').classList.add('hidden');
+        
+        // Reset the guess processing flag
+        this.isProcessingGuess = false;
         
         // Switch teams
         gameState.currentTeam = gameState.currentTeam === 1 ? 2 : 1;

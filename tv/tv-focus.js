@@ -201,16 +201,8 @@ class FocusManager {
     // Activate currently focused element (simulate click)
     activateFocused() {
         if (this.currentFocusedElement) {
-            // Trigger click event
+            // Only trigger click event - keydown listeners are already triggered by actual key press
             this.currentFocusedElement.click();
-            
-            // Trigger enter key event
-            const event = new KeyboardEvent('keydown', {
-                key: 'Enter',
-                keyCode: 13,
-                bubbles: true
-            });
-            this.currentFocusedElement.dispatchEvent(event);
         }
     }
 

@@ -1,7 +1,9 @@
 // Video Player Manager for TV
 // Supports both direct video URLs (ad-free) and YouTube iframe (fallback)
 
-const API_URL = 'http://birkehaven.dyndns.dk/api';
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:3000/api'
+    : 'http://birkehaven.dyndns.dk/api';
 
 class VideoPlayerManager {
     constructor() {
