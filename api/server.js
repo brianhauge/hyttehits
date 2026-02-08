@@ -7,6 +7,7 @@ const axios = require('axios');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./swagger');
 const XLSX = require('xlsx');
+const { extractVideoUrl, getExtractionStats, clearExpiredCache, clearAllCache } = require('./youtube-extractor');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -1884,14 +1885,309 @@ app.get('/api/admin/game-stats', authenticateToken, async (req, res) => {
   }
 });
 
+// ============================================
+// YOUTUBE EXTRACTION ROUTES
+// ============================================
+
+/**
+ * @openapi
+ * /api/youtube/extract/{videoId}:
+ *   get:
+ *     tags:
+ *       - YouTube
+ *     summary: Extract direct video URL from YouTube (public endpoint for TV app)
+ *     parameters:
+ *       - in: path
+ *         name: videoId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: YouTube video ID
+ *     responses:
+ *       200:
+ *         description: Extraction result
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 videoId:
+ *                   type: string
+ *                 directUrl:
+ *                   type: string
+ *                 quality:
+ *                   type: string
+ *                 cachedUntil:
+ *                   type: string
+ *                 fallbackToIframe:
+ *                   type: boolean
+ */
+app.get('/api/youtube/extract/:videoId', async (req, res) => {
+  try {
+    const { videoId } = req.params;
+    
+    console.log(`[Extract] Request for ${videoId}`);
+    
+    const result = await extractVideoUrl(videoId, pool);
+    
+    if (result) {
+      res.json({
+        success: true,
+        videoId,
+        directUrl: result.url,
+        quality: result.quality,
+        cachedUntil: result.expiresAt
+      });
+    } else {
+      // Extraction failed, TV app will fallback to iframe
+      res.json({
+        success: false,
+        videoId,
+        fallbackToIframe: true
+      });
+    }
+  } catch (err) {
+    console.error('[Extract] Error:', err);
+    res.status(500).json({ 
+      success: false,
+      error: 'Extraction failed',
+      fallbackToIframe: true
+    });
+  }
+});
+
+/**
+ * @openapi
+ * /api/admin/youtube/test/{videoId}:
+ *   post:
+ *     tags:
+ *       - Admin - YouTube
+ *     summary: Test extraction for a single video (force refresh)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: videoId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Test result
+ */
+app.post('/api/admin/youtube/test/:videoId', authenticateToken, async (req, res) => {
+  try {
+    const { videoId } = req.params;
+    
+    console.log(`[Admin Test] Testing ${videoId}`);
+    
+    const startTime = Date.now();
+    const result = await extractVideoUrl(videoId, pool, true); // Force refresh
+    const duration = Date.now() - startTime;
+    
+    if (result) {
+      res.json({
+        success: true,
+        videoId,
+        directUrl: result.url,
+        quality: result.quality,
+        duration: `${duration}ms`
+      });
+    } else {
+      res.json({
+        success: false,
+        videoId,
+        error: 'Extraction failed',
+        duration: `${duration}ms`
+      });
+    }
+    
+    await logAudit(req.user.user_id, 'test', 'youtube_extraction', videoId, { duration }, getClientIp(req));
+  } catch (err) {
+    console.error('[Admin Test] Error:', err);
+    res.status(500).json({ error: 'Test failed', message: err.message });
+  }
+});
+
+/**
+ * @openapi
+ * /api/admin/youtube/test-batch:
+ *   post:
+ *     tags:
+ *       - Admin - YouTube
+ *     summary: Test extraction for multiple videos
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               videoIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               status:
+ *                 type: string
+ *                 description: Optional filter - test only videos with this status
+ *     responses:
+ *       200:
+ *         description: Batch test results
+ */
+app.post('/api/admin/youtube/test-batch', authenticateToken, async (req, res) => {
+  try {
+    let { videoIds, status } = req.body;
+    
+    // If no videoIds provided, get all videos (or filtered by status)
+    if (!videoIds || videoIds.length === 0) {
+      let query = 'SELECT video_id FROM songs';
+      let params = [];
+      
+      if (status) {
+        query += ' WHERE extraction_status = $1';
+        params.push(status);
+      }
+      
+      const result = await pool.query(query, params);
+      videoIds = result.rows.map(row => row.video_id);
+    }
+    
+    console.log(`[Admin Batch Test] Testing ${videoIds.length} videos`);
+    
+    const results = [];
+    let successCount = 0;
+    let failureCount = 0;
+    
+    // Process sequentially to avoid rate limiting (5 per minute = 12 second intervals)
+    for (let i = 0; i < videoIds.length; i++) {
+      const videoId = videoIds[i];
+      
+      try {
+        const startTime = Date.now();
+        const result = await extractVideoUrl(videoId, pool, true);
+        const duration = Date.now() - startTime;
+        
+        if (result) {
+          successCount++;
+          results.push({
+            videoId,
+            success: true,
+            quality: result.quality,
+            duration: `${duration}ms`
+          });
+        } else {
+          failureCount++;
+          results.push({
+            videoId,
+            success: false,
+            duration: `${duration}ms`
+          });
+        }
+      } catch (err) {
+        failureCount++;
+        results.push({
+          videoId,
+          success: false,
+          error: err.message
+        });
+      }
+      
+      // Rate limiting: wait 12 seconds between requests (5 per minute)
+      if (i < videoIds.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 12000));
+      }
+    }
+    
+    res.json({
+      totalTested: videoIds.length,
+      successCount,
+      failureCount,
+      results
+    });
+    
+    await logAudit(req.user.user_id, 'test_batch', 'youtube_extraction', null, 
+      { totalTested: videoIds.length, successCount, failureCount }, getClientIp(req));
+  } catch (err) {
+    console.error('[Admin Batch Test] Error:', err);
+    res.status(500).json({ error: 'Batch test failed', message: err.message });
+  }
+});
+
+/**
+ * @openapi
+ * /api/admin/youtube/stats:
+ *   get:
+ *     tags:
+ *       - Admin - YouTube
+ *     summary: Get extraction statistics
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Statistics
+ */
+app.get('/api/admin/youtube/stats', authenticateToken, async (req, res) => {
+  try {
+    const stats = await getExtractionStats(pool);
+    res.json(stats);
+  } catch (err) {
+    console.error('[Admin Stats] Error:', err);
+    res.status(500).json({ error: 'Failed to get statistics', message: err.message });
+  }
+});
+
+/**
+ * @openapi
+ * /api/admin/youtube/cache:
+ *   delete:
+ *     tags:
+ *       - Admin - YouTube
+ *     summary: Clear extraction cache
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: all
+ *         schema:
+ *           type: boolean
+ *         description: Clear all cache (true) or only expired (false)
+ *     responses:
+ *       200:
+ *         description: Cache cleared
+ */
+app.delete('/api/admin/youtube/cache', authenticateToken, async (req, res) => {
+  try {
+    const clearAll = req.query.all === 'true';
+    
+    const count = clearAll 
+      ? await clearAllCache(pool) 
+      : await clearExpiredCache(pool);
+    
+    res.json({
+      success: true,
+      cleared: count,
+      type: clearAll ? 'all' : 'expired'
+    });
+    
+    await logAudit(req.user.user_id, 'clear_cache', 'youtube_extraction', null, 
+      { cleared: count, type: clearAll ? 'all' : 'expired' }, getClientIp(req));
+  } catch (err) {
+    console.error('[Admin Clear Cache] Error:', err);
+    res.status(500).json({ error: 'Failed to clear cache', message: err.message });
+  }
+});
+
 /**
  * @openapi
  * /health:
  *   get:
  *     tags:
- *       - Health
- *     summary: Health check
- *     description: Check if the API is running
+ *       - System
+ *     summary: Health check endpoint
  *     responses:
  *       200:
  *         description: API is healthy

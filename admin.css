@@ -554,3 +554,159 @@ tbody tr:hover {
         width: 100%;
     }
 }
+
+/* Video Testing Tab Styles */
+.extraction-stats-section,
+.test-section,
+.failed-section {
+    margin-bottom: 40px;
+}
+
+.extraction-stats-section h3,
+.test-section h3,
+.failed-section h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.stat-card h4 {
+    font-size: 13px;
+    font-weight: 500;
+    opacity: 0.9;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stat-card.success {
+    background: linear-gradient(135deg, #28a745 0%, #218838 100%);
+}
+
+.stat-card.danger {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+}
+
+.stat-card.warning {
+    background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+}
+
+.stat-card.info {
+    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+}
+
+.stat-percent {
+    font-size: 14px;
+    opacity: 0.9;
+    margin-top: 5px;
+}
+
+/* Test Form */
+.test-form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.test-form .form-control {
+    flex: 1;
+    padding: 10px 16px;
+    border: 2px solid #e1e8ed;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.test-form .form-control:focus {
+    outline: none;
+    border-color: #007bff;
+}
+
+.test-result {
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 20px;
+}
+
+.test-result.success {
+    background: #d4edda;
+    border: 2px solid #28a745;
+}
+
+.test-result.error {
+    background: #f8d7da;
+    border: 2px solid #dc3545;
+}
+
+.test-result h4 {
+    margin-bottom: 10px;
+    font-size: 16px;
+}
+
+.test-result p {
+    margin: 5px 0;
+    font-size: 14px;
+}
+
+.test-result .direct-url {
+    word-break: break-all;
+    background: rgba(0, 0, 0, 0.05);
+    padding: 10px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 12px;
+    margin-top: 10px;
+}
+
+/* Bulk Testing */
+.bulk-test-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.bulk-results {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 20px;
+}
+
+.bulk-results h4 {
+    margin-bottom: 15px;
+    font-size: 16px;
+}
+
+.bulk-results .result-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.bulk-results .result-item {
+    background: white;
+    padding: 15px;
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.bulk-results .result-item strong {
+    display: block;
+    font-size: 24px;
+    color: #007bff;
+    margin-bottom: 5px;
+}
+
+/* Failed Extractions Table */
+.status-badge.status-failed {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.status-badge.status-rate-limited {
+    background: #fff3cd;
+    color: #856404;
+}
+

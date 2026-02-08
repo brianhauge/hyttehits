@@ -1213,6 +1213,300 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// ============================================
+// VIDEO TESTING TAB FUNCTIONS
+// ============================================
+
+// Load extraction statistics
+async function loadExtractionStats() {
+    try {
+        const response = await fetch(`${API_URL}/admin/youtube/stats`, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+        
+        if (!response.ok) throw new Error('Failed to load stats');
+        
+        const stats = await response.json();
+        
+        // Update UI
+        document.getElementById('extractionStatTotal').textContent = stats.totalSongs || 0;
+        
+        const working = stats.statusBreakdown.working || 0;
+        const failed = stats.statusBreakdown.failed || 0;
+        const rateLimited = stats.statusBreakdown.rate_limited || 0;
+        const unknown = stats.statusBreakdown.unknown || 0;
+        
+        document.getElementById('extractionStatWorking').textContent = working;
+        document.getElementById('extractionStatWorkingPercent').textContent = 
+            `${((working / stats.totalSongs) * 100).toFixed(1)}%`;
+        
+        document.getElementById('extractionStatFailed').textContent = failed;
+        document.getElementById('extractionStatFailedPercent').textContent = 
+            `${((failed / stats.totalSongs) * 100).toFixed(1)}%`;
+        
+        document.getElementById('extractionStatRateLimited').textContent = rateLimited;
+        document.getElementById('extractionStatRateLimitedPercent').textContent = 
+            `${((rateLimited / stats.totalSongs) * 100).toFixed(1)}%`;
+        
+        document.getElementById('extractionStatUnknown').textContent = unknown;
+        document.getElementById('extractionStatUnknownPercent').textContent = 
+            `${((unknown / stats.totalSongs) * 100).toFixed(1)}%`;
+        
+        document.getElementById('extractionStatCacheSize').textContent = stats.cacheSize || 0;
+        
+        // Load failed extractions table
+        loadFailedExtractions(stats.recentFailures || []);
+        
+    } catch (error) {
+        console.error('Error loading extraction stats:', error);
+        alert('Failed to load extraction statistics');
+    }
+}
+
+// Load failed extractions into table
+function loadFailedExtractions(failures) {
+    const tbody = document.getElementById('failedExtractionsBody');
+    
+    if (failures.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="loading">No failed extractions</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = failures.map(song => `
+        <tr>
+            <td>${escapeHtml(song.video_id)}</td>
+            <td>${escapeHtml(song.title)}</td>
+            <td>${escapeHtml(song.artist)}</td>
+            <td>${song.year || 'N/A'}</td>
+            <td><span class="status-badge status-${song.extraction_status}">${song.extraction_status}</span></td>
+            <td>${song.extraction_error_count || 0}</td>
+            <td>${song.extraction_last_tested ? new Date(song.extraction_last_tested).toLocaleString() : 'Never'}</td>
+            <td>
+                <div class="action-btns">
+                    <button class="btn btn-secondary" onclick="testSingleVideo('${song.video_id}')">Re-test</button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// Test single video
+async function testSingleVideo(videoId) {
+    if (!videoId) {
+        videoId = document.getElementById('testVideoId').value.trim();
+    }
+    
+    if (!videoId) {
+        alert('Please enter a video ID');
+        return;
+    }
+    
+    const resultDiv = document.getElementById('testResult');
+    resultDiv.classList.remove('hidden', 'success', 'error');
+    resultDiv.innerHTML = '<p>Testing...</p>';
+    
+    try {
+        const startTime = Date.now();
+        const response = await fetch(`${API_URL}/admin/youtube/test/${videoId}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+        
+        if (!response.ok) throw new Error('Test failed');
+        
+        const result = await response.json();
+        const duration = Date.now() - startTime;
+        
+        if (result.success) {
+            resultDiv.classList.add('success');
+            resultDiv.innerHTML = `
+                <h4>✓ Extraction Successful</h4>
+                <p><strong>Video ID:</strong> ${escapeHtml(videoId)}</p>
+                <p><strong>Quality:</strong> ${result.quality}</p>
+                <p><strong>Duration:</strong> ${result.duration || duration + 'ms'}</p>
+                <div class="direct-url">
+                    <strong>Direct URL:</strong><br>
+                    ${escapeHtml(result.directUrl.substring(0, 200))}...
+                </div>
+            `;
+        } else {
+            resultDiv.classList.add('error');
+            resultDiv.innerHTML = `
+                <h4>✗ Extraction Failed</h4>
+                <p><strong>Video ID:</strong> ${escapeHtml(videoId)}</p>
+                <p><strong>Error:</strong> ${result.error || 'Unknown error'}</p>
+                <p><strong>Duration:</strong> ${result.duration || duration + 'ms'}</p>
+            `;
+        }
+        
+        // Refresh stats
+        loadExtractionStats();
+        
+    } catch (error) {
+        resultDiv.classList.add('error');
+        resultDiv.innerHTML = `
+            <h4>✗ Test Error</h4>
+            <p>${error.message}</p>
+        `;
+    }
+}
+
+// Bulk test videos
+async function bulkTestVideos(status) {
+    const progressDiv = document.getElementById('bulkTestProgress');
+    const resultsDiv = document.getElementById('bulkTestResults');
+    const progressBar = document.getElementById('bulkProgressBar');
+    const progressText = document.getElementById('bulkProgressText');
+    
+    progressDiv.classList.remove('hidden');
+    resultsDiv.classList.add('hidden');
+    progressBar.style.width = '0%';
+    progressText.textContent = 'Starting bulk test...';
+    
+    try {
+        const response = await fetch(`${API_URL}/admin/youtube/test-batch`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({ status })
+        });
+        
+        if (!response.ok) throw new Error('Bulk test failed');
+        
+        const result = await response.json();
+        
+        // Show results
+        progressDiv.classList.add('hidden');
+        resultsDiv.classList.remove('hidden');
+        
+        resultsDiv.innerHTML = `
+            <h4>Bulk Test Complete</h4>
+            <div class="result-summary">
+                <div class="result-item">
+                    <strong>${result.totalTested}</strong>
+                    <span>Total Tested</span>
+                </div>
+                <div class="result-item">
+                    <strong style="color: #28a745;">${result.successCount}</strong>
+                    <span>Successful</span>
+                </div>
+                <div class="result-item">
+                    <strong style="color: #dc3545;">${result.failureCount}</strong>
+                    <span>Failed</span>
+                </div>
+            </div>
+            <p><strong>Note:</strong> This operation may take several minutes due to rate limiting (12 seconds per video).</p>
+        `;
+        
+        // Refresh stats
+        loadExtractionStats();
+        
+    } catch (error) {
+        progressDiv.classList.add('hidden');
+        alert(`Bulk test error: ${error.message}`);
+    }
+}
+
+// Clear cache
+async function clearCache() {
+    if (!confirm('Are you sure you want to clear all extraction cache?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_URL}/admin/youtube/cache?all=true`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+        
+        if (!response.ok) throw new Error('Failed to clear cache');
+        
+        const result = await response.json();
+        alert(`Cache cleared: ${result.cleared} entries deleted`);
+        
+        // Refresh stats
+        loadExtractionStats();
+        
+    } catch (error) {
+        alert(`Error clearing cache: ${error.message}`);
+    }
+}
+
+// Video Testing Tab Event Listeners
+document.addEventListener('DOMContentLoaded', () => {
+    // Refresh stats button
+    const refreshStatsBtn = document.getElementById('refreshExtractionStatsBtn');
+    if (refreshStatsBtn) {
+        refreshStatsBtn.addEventListener('click', loadExtractionStats);
+    }
+    
+    // Test single video button
+    const testSingleBtn = document.getElementById('testSingleBtn');
+    if (testSingleBtn) {
+        testSingleBtn.addEventListener('click', () => testSingleVideo());
+    }
+    
+    // Test video ID input - test on Enter key
+    const testVideoIdInput = document.getElementById('testVideoId');
+    if (testVideoIdInput) {
+        testVideoIdInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                testSingleVideo();
+            }
+        });
+    }
+    
+    // Clear cache button
+    const clearCacheBtn = document.getElementById('clearCacheBtn');
+    if (clearCacheBtn) {
+        clearCacheBtn.addEventListener('click', clearCache);
+    }
+    
+    // Bulk test buttons
+    const testAllUnknownBtn = document.getElementById('testAllUnknownBtn');
+    if (testAllUnknownBtn) {
+        testAllUnknownBtn.addEventListener('click', () => {
+            if (confirm('This will test all unknown videos. This may take a long time. Continue?')) {
+                bulkTestVideos('unknown');
+            }
+        });
+    }
+    
+    const testAllFailedBtn = document.getElementById('testAllFailedBtn');
+    if (testAllFailedBtn) {
+        testAllFailedBtn.addEventListener('click', () => {
+            if (confirm('This will re-test all failed videos. Continue?')) {
+                bulkTestVideos('failed');
+            }
+        });
+    }
+    
+    const testAllRateLimitedBtn = document.getElementById('testAllRateLimitedBtn');
+    if (testAllRateLimitedBtn) {
+        testAllRateLimitedBtn.addEventListener('click', () => {
+            if (confirm('This will re-test all rate-limited videos. Continue?')) {
+                bulkTestVideos('rate_limited');
+            }
+        });
+    }
+    
+    // Load stats when video-testing tab is shown
+    const videoTestingTab = document.querySelector('[data-tab="video-testing"]');
+    if (videoTestingTab) {
+        videoTestingTab.addEventListener('click', () => {
+            setTimeout(loadExtractionStats, 100);
+        });
+    }
+});
+
 // Initialize
 (async function init() {
     const isAuthenticated = await Auth.verify();

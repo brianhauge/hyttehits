@@ -42,6 +42,7 @@
             <button class="tab-btn" data-tab="playlists">Playlists</button>
             <button class="tab-btn" data-tab="broken">Broken Songs</button>
             <button class="tab-btn" data-tab="csv">Excel Import/Export</button>
+            <button class="tab-btn" data-tab="video-testing">Video Testing</button>
             <button class="tab-btn" data-tab="users">Users</button>
             <button class="tab-btn" data-tab="audit">Audit Logs</button>
             <button class="tab-btn" data-tab="game">Game Logs</button>
@@ -421,6 +422,105 @@
                     <div class="stat-card">
                         <h3>Unchecked Songs</h3>
                         <div class="stat-value" id="statUnchecked">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Video Testing Tab -->
+            <div id="video-testingTab" class="tab-content">
+                <div class="tab-header">
+                    <h2>YouTube Video Extraction Testing</h2>
+                    <button id="refreshExtractionStatsBtn" class="btn btn-secondary">Refresh Stats</button>
+                </div>
+                
+                <!-- Statistics Dashboard -->
+                <div class="extraction-stats-section">
+                    <h3>Extraction Statistics</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h4>Total Songs</h4>
+                            <div class="stat-value" id="extractionStatTotal">-</div>
+                        </div>
+                        <div class="stat-card success">
+                            <h4>Working Extractions</h4>
+                            <div class="stat-value" id="extractionStatWorking">-</div>
+                            <div class="stat-percent" id="extractionStatWorkingPercent">-</div>
+                        </div>
+                        <div class="stat-card danger">
+                            <h4>Failed Extractions</h4>
+                            <div class="stat-value" id="extractionStatFailed">-</div>
+                            <div class="stat-percent" id="extractionStatFailedPercent">-</div>
+                        </div>
+                        <div class="stat-card warning">
+                            <h4>Rate Limited</h4>
+                            <div class="stat-value" id="extractionStatRateLimited">-</div>
+                            <div class="stat-percent" id="extractionStatRateLimitedPercent">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>Unknown/Untested</h4>
+                            <div class="stat-value" id="extractionStatUnknown">-</div>
+                            <div class="stat-percent" id="extractionStatUnknownPercent">-</div>
+                        </div>
+                        <div class="stat-card info">
+                            <h4>Cache Size</h4>
+                            <div class="stat-value" id="extractionStatCacheSize">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Test Single Video -->
+                <div class="test-section">
+                    <h3>Test Single Video</h3>
+                    <div class="test-form">
+                        <input type="text" id="testVideoId" placeholder="Enter Video ID (e.g., dQw4w9WgXcQ)" class="form-control">
+                        <button id="testSingleBtn" class="btn btn-primary">Test Video</button>
+                        <button id="clearCacheBtn" class="btn btn-secondary">Clear All Cache</button>
+                    </div>
+                    <div id="testResult" class="test-result hidden">
+                        <!-- Result will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Bulk Testing -->
+                <div class="test-section">
+                    <h3>Bulk Testing</h3>
+                    <div class="bulk-test-controls">
+                        <button id="testAllUnknownBtn" class="btn btn-primary">Test All Unknown Videos</button>
+                        <button id="testAllFailedBtn" class="btn btn-warning">Re-test All Failed Videos</button>
+                        <button id="testAllRateLimitedBtn" class="btn btn-warning">Re-test Rate Limited Videos</button>
+                    </div>
+                    <div id="bulkTestProgress" class="progress-container hidden">
+                        <div class="progress-bar">
+                            <div id="bulkProgressBar" class="progress-fill"></div>
+                        </div>
+                        <span id="bulkProgressText">Testing videos...</span>
+                    </div>
+                    <div id="bulkTestResults" class="bulk-results hidden">
+                        <!-- Results will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Failed Extractions Table -->
+                <div class="failed-section">
+                    <h3>Recent Failed Extractions</h3>
+                    <div class="table-container">
+                        <table id="failedExtractionsTable">
+                            <thead>
+                                <tr>
+                                    <th>Video ID</th>
+                                    <th>Title</th>
+                                    <th>Artist</th>
+                                    <th>Year</th>
+                                    <th>Status</th>
+                                    <th>Error Count</th>
+                                    <th>Last Tested</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="failedExtractionsBody">
+                                <tr><td colspan="8" class="loading">Loading failed extractions...</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>

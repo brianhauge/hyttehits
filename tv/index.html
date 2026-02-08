@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, initial-scale=1.0">
+    <title>Hytte Hits TV</title>
+    <link rel="stylesheet" href="tv-styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Setup Screen -->
+        <div id="setup-screen" class="screen active">
+            <div class="setup-content">
+                <h1 class="app-title">HYTTE HITS</h1>
+                <p class="app-subtitle">Musik Quiz Spil</p>
+                
+                <div id="team-setup">
+                    <!-- Mode Selector -->
+                    <div class="mode-selector">
+                        <button class="mode-btn focusable active" data-mode="year-range" tabindex="0">
+                            <span class="mode-icon">📅</span>
+                            <span class="mode-text">Årsinterval</span>
+                        </button>
+                        <button class="mode-btn focusable" data-mode="playlist" tabindex="0">
+                            <span class="mode-icon">🎵</span>
+                            <span class="mode-text">Playliste</span>
+                        </button>
+                    </div>
+                    
+                    <!-- Playlist Mode -->
+                    <div id="playlist-mode" class="mode-content hidden">
+                        <h2 class="section-title">Vælg Playliste</h2>
+                        <div id="playlist-options" class="playlist-grid">
+                            <!-- Playlists loaded dynamically -->
+                        </div>
+                    </div>
+                    
+                    <!-- Year Range Mode -->
+                    <div id="year-range-mode" class="mode-content">
+                        <h2 class="section-title">Vælg Årsinterval</h2>
+                        <div class="year-display">
+                            <div class="year-box">
+                                <span class="year-label">Fra</span>
+                                <span id="year-start-value" class="year-value">1954</span>
+                            </div>
+                            <div class="year-info">
+                                <span id="year-song-count" class="song-count">0 sange</span>
+                            </div>
+                            <div class="year-box">
+                                <span class="year-label">Til</span>
+                                <span id="year-end-value" class="year-value">2025</span>
+                            </div>
+                        </div>
+                        <div class="year-controls">
+                            <button class="year-adjust-btn focusable" data-year-type="start" tabindex="0">
+                                <span>Start År</span>
+                                <span class="year-hint">↑↓</span>
+                            </button>
+                            <button class="year-adjust-btn focusable" data-year-type="end" tabindex="0">
+                                <span>Slut År</span>
+                                <span class="year-hint">↑↓</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Team Names -->
+                    <div class="team-names-section">
+                        <h2 class="section-title">Holdnavne</h2>
+                        <div class="team-inputs">
+                            <div class="team-input-group">
+                                <label class="team-label">Hold 1:</label>
+                                <button class="team-name-btn focusable" id="team1-btn" data-team="1" tabindex="0">
+                                    <span id="team1-display">Hold 1</span>
+                                </button>
+                            </div>
+                            <div class="team-input-group">
+                                <label class="team-label">Hold 2:</label>
+                                <button class="team-name-btn focusable" id="team2-btn" data-team="2" tabindex="0">
+                                    <span id="team2-display">Hold 2</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Start Button -->
+                    <button id="start-game" class="btn btn-primary focusable" tabindex="0">
+                        START SPIL
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="screen">
+            <div class="game-content">
+                <!-- Current Team Indicator (Header) -->
+                <div class="current-team-indicator" id="current-team-indicator">
+                    <div class="team-scores-header">
+                        <div class="team-score-box" id="team1-score-box">
+                            <span class="team-name-header" id="header-team1-name">Hold 1</span>
+                            <span class="team-score-header"><span id="header-team1-score">0</span>/10</span>
+                        </div>
+                        <div class="current-turn-indicator">
+                            <span id="current-turn-text">Hold 1</span>s Tur
+                        </div>
+                        <div class="team-score-box" id="team2-score-box">
+                            <span class="team-name-header" id="header-team2-name">Hold 2</span>
+                            <span class="team-score-header"><span id="header-team2-score">0</span>/10</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Video Container -->
+                <div class="video-container">
+                    <video id="direct-player" class="video-player" preload="auto"></video>
+                    <div id="youtube-player" class="video-player"></div>
+                    <div id="video-loading" class="loading-spinner hidden">
+                        <div class="spinner"></div>
+                        <p>Indlæser video...</p>
+                    </div>
+                    <div id="video-error" class="error-message hidden">
+                        <p>Video ikke tilgængelig. Springer over...</p>
+                    </div>
+                </div>
+                
+                <!-- Guess Section (Footer) -->
+                <div class="guess-section" id="guess-section">
+                    <div id="guess-options" class="guess-options">
+                        <!-- Dynamically populated -->
+                    </div>
+                </div>
+
+                <!-- Result Modal -->
+                <div class="result-modal hidden" id="result-modal">
+                    <div class="result-content">
+                        <h2 id="result-title" class="result-title"></h2>
+                        <div class="song-reveal">
+                            <p class="reveal-song"><strong id="reveal-song-title"></strong></p>
+                            <p class="reveal-artist">af <span id="reveal-artist"></span></p>
+                            <p class="reveal-year">Udgivet i <strong id="reveal-year"></strong></p>
+                        </div>
+                        <button id="continue-game" class="btn btn-continue focusable" tabindex="0">
+                            FORTSÆT
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Winner Screen -->
+        <div id="winner-screen" class="screen">
+            <div class="winner-content">
+                <h1 class="winner-title">🏆 VI HAR EN VINDER! 🏆</h1>
+                <h2 id="winner-name" class="winner-name"></h2>
+                <p class="winner-message">TILLYKKE!</p>
+                <div class="final-scores">
+                    <div class="final-score-box">
+                        <h3 id="final-team1-name">Hold 1</h3>
+                        <p class="final-score-value"><span id="final-team1-score">0</span> point</p>
+                    </div>
+                    <div class="final-score-box">
+                        <h3 id="final-team2-name">Hold 2</h3>
+                        <p class="final-score-value"><span id="final-team2-score">0</span> point</p>
+                    </div>
+                </div>
+                <button id="play-again" class="btn btn-primary focusable" tabindex="0">
+                    SPIL IGEN
+                </button>
+            </div>
+        </div>
+
+        <!-- Virtual Keyboard Modal -->
+        <div id="keyboard-modal" class="keyboard-modal hidden">
+            <div class="keyboard-content">
+                <h2 class="keyboard-title">Indtast Holdnavn</h2>
+                <div class="keyboard-display">
+                    <span id="keyboard-current-text">Hold 1</span>
+                    <span class="keyboard-cursor">|</span>
+                </div>
+                <div class="keyboard-grid" id="keyboard-grid">
+                    <!-- Keyboard keys populated dynamically -->
+                </div>
+                <div class="keyboard-actions">
+                    <button class="keyboard-action-btn focusable" data-action="backspace" tabindex="0">⌫ SLET</button>
+                    <button class="keyboard-action-btn focusable" data-action="space" tabindex="0">MELLEMRUM</button>
+                    <button class="keyboard-action-btn focusable keyboard-done" data-action="done" tabindex="0">✓ FÆRDIG</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    <script src="tv-focus.js"></script>
+    <script src="tv-navigation.js"></script>
+    <script src="tv-youtube.js"></script>
+    <script src="tv-game.js"></script>
+</body>
+</html>
