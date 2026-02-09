@@ -431,6 +431,12 @@ body {
     display: none;
 }
 
+/* Prevent YouTube iframe from capturing focus and keyboard events */
+#youtube-player iframe {
+    pointer-events: auto;
+    /* Note: We set disablekb in the player params, but this is extra insurance */
+}
+
 /* Scale HTML5 video controls for TV viewing */
 #direct-player::-webkit-media-controls-panel {
     transform: scale(1.5);

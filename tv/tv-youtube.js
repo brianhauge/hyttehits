@@ -207,7 +207,7 @@ class VideoPlayerManager {
                 playerVars: {
                     'autoplay': 1,
                     'controls': 1,
-                    'disablekb': 0,
+                    'disablekb': 1, // Disable keyboard to prevent iframe from capturing arrow keys
                     'modestbranding': 1,
                     'rel': 0,
                     'showinfo': 0,

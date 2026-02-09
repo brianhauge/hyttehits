@@ -12,52 +12,64 @@ class TVNavigation {
     init() {
         console.log('TV Navigation initialized');
         
-        // Listen for keyboard events
-        document.addEventListener('keydown', this.handleKeyDown.bind(this));
-        document.addEventListener('keyup', this.handleKeyUp.bind(this));
+        // Listen for keyboard events in CAPTURE phase (runs before target/bubble phase)
+        // This ensures we catch events before anything else can stop them
+        document.addEventListener('keydown', this.handleKeyDown.bind(this), true); // true = capture phase
+        document.addEventListener('keyup', this.handleKeyUp.bind(this), true); // true = capture phase
         
-        // Prevent default scrolling behavior
+        // Also add logging to window to see ALL keydown events
         window.addEventListener('keydown', (e) => {
+            console.log('[Window] Raw keydown:', e.key, 'Target:', e.target.tagName, 'DefaultPrevented:', e.defaultPrevented);
             if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', ' '].includes(e.key)) {
                 e.preventDefault();
             }
-        });
+        }, true); // true = capture phase
     }
 
     handleKeyDown(event) {
         const key = event.key;
         const keyCode = event.keyCode;
         
-        console.log('Key pressed:', key, 'KeyCode:', keyCode);
+        console.log('[TVNavigation] Key pressed:', key, 'KeyCode:', keyCode, 'Target:', event.target.tagName);
         
         // Prevent default for navigation keys
         if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'].includes(key)) {
             event.preventDefault();
+            console.log('[TVNavigation] Prevented default for:', key);
         }
         
         // Prevent navigation lock spam
-        if (this.isNavigating) return;
+        if (this.isNavigating) {
+            console.log('[TVNavigation] Navigation locked, ignoring');
+            return;
+        }
         this.isNavigating = true;
         
         // Handle by key name first, then return to avoid duplicate handling
         switch(key) {
             case 'ArrowUp':
+                console.log('[TVNavigation] Handling ArrowUp');
                 this.handleArrowKey('up');
                 return;
             case 'ArrowDown':
+                console.log('[TVNavigation] Handling ArrowDown');
                 this.handleArrowKey('down');
                 return;
             case 'ArrowLeft':
+                console.log('[TVNavigation] Handling ArrowLeft');
                 this.handleArrowKey('left');
                 return;
             case 'ArrowRight':
+                console.log('[TVNavigation] Handling ArrowRight');
                 this.handleArrowKey('right');
                 return;
             case 'Enter':
+                console.log('[TVNavigation] Handling Enter');
                 this.handleEnterKey();
                 return;
             case 'Backspace':
             case 'Escape':
+                console.log('[TVNavigation] Handling Back');
                 this.handleBackKey();
                 return;
         }
@@ -137,6 +149,14 @@ class TVNavigation {
         // Check if we're in a special context
         const activeScreen = document.querySelector('.screen.active');
         if (!activeScreen) return;
+
+        // If an iframe has focus, blur it and focus the first focusable element
+        if (document.activeElement && document.activeElement.tagName === 'IFRAME') {
+            console.log('[TVNavigation] Iframe has focus, blurring and focusing first element');
+            document.activeElement.blur();
+            window.focusManager.focusFirst();
+            return;
+        }
 
         // Use focus manager for spatial navigation
         window.focusManager.navigate(direction);

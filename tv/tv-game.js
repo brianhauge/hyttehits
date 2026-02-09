@@ -540,10 +540,26 @@ class GameController {
             }
         }
         
-        // Focus first button
+        // Focus first button - with multiple attempts to combat iframe focus stealing
         setTimeout(() => {
+            // Refresh focusable elements after DOM changes
+            window.focusManager.refresh();
             const firstBtn = container.querySelector('.guess-btn');
-            if (firstBtn) window.focusManager.setFocus(firstBtn);
+            if (firstBtn) {
+                console.log('[showGuessOptions] Focusing first button, total focusable:', window.focusManager.getFocusableElements().length);
+                window.focusManager.setFocus(firstBtn);
+                
+                // Keep trying to restore focus if iframe steals it
+                const focusInterval = setInterval(() => {
+                    if (document.activeElement && document.activeElement.tagName === 'IFRAME') {
+                        console.log('[showGuessOptions] Iframe stole focus, restoring to button');
+                        window.focusManager.setFocus(firstBtn);
+                    }
+                }, 200);
+                
+                // Stop checking after 2 seconds
+                setTimeout(() => clearInterval(focusInterval), 2000);
+            }
             this.isShowingOptions = false; // Reset flag after focus is set
         }, 100);
     }

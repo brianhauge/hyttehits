@@ -104,6 +104,7 @@ class FocusManager {
         }
 
         const elements = this.getFocusableElements();
+        console.log(`[findElementInDirection] Direction: ${direction}, Total elements: ${elements.length}`);
         if (elements.length === 0) return null;
 
         const currentRect = this.currentFocusedElement.getBoundingClientRect();
@@ -111,11 +112,12 @@ class FocusManager {
             x: currentRect.left + currentRect.width / 2,
             y: currentRect.top + currentRect.height / 2
         };
+        console.log(`[findElementInDirection] Current center:`, currentCenter);
 
         let bestElement = null;
         let bestScore = Infinity;
 
-        elements.forEach(element => {
+        elements.forEach((element, index) => {
             if (element === this.currentFocusedElement) return;
 
             const rect = element.getBoundingClientRect();
@@ -152,9 +154,12 @@ class FocusManager {
                     break;
             }
 
+            console.log(`[findElementInDirection] Element ${index}: center=${JSON.stringify(center)}, isInDirection=${isInDirection}, distance=${distance}, alignment=${alignment}`);
+
             if (isInDirection && distance > 0) {
                 // Score based on distance and alignment (lower is better)
                 const score = distance + alignment * 0.5;
+                console.log(`[findElementInDirection] Element ${index} score: ${score}`);
                 if (score < bestScore) {
                     bestScore = score;
                     bestElement = element;
@@ -162,16 +167,20 @@ class FocusManager {
             }
         });
 
+        console.log(`[findElementInDirection] Best element:`, bestElement, `with score: ${bestScore}`);
         return bestElement;
     }
 
     // Navigate in a direction
     navigate(direction) {
+        console.log(`[FocusManager] Navigate ${direction} from`, this.currentFocusedElement);
         const targetElement = this.findElementInDirection(direction);
         
         if (targetElement) {
+            console.log(`[FocusManager] Found target:`, targetElement);
             this.setFocus(targetElement);
         } else {
+            console.log(`[FocusManager] No target found in ${direction}, trying wrap around`);
             // If no element found in direction, try wrapping around
             if (direction === 'left' || direction === 'up') {
                 this.focusPrevious();
