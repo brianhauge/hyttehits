@@ -9,7 +9,7 @@ const gameState = {
     usedSongIds: new Set(),
     gameMode: 'year-range', // 'playlist' or 'year-range'
     selectedPlaylist: 'Modern', // Playlist name (Modern, Classic, etc.)
-    yearStart: 2000,
+    yearStart: 1960,
     yearEnd: 2025,
     sessionId: null // Session ID for tracking game plays
 };
